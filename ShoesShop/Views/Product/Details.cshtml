@@ -1,0 +1,318 @@
+@model ProductDetailsViewModel
+@{
+	ViewData["Title"] = "Detail";
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="row">
+	<div class="col-sm-3">
+		@Html.Partial("_SidebarPartial")
+	</div>
+
+	<div class="col-sm-9 padding-right">
+		<div class="product-details">
+			<!--product-details-->
+			<div class="col-sm-5">
+				<div class="productinfo text-center">
+					<img src="~/media/products/@Model.ProductDetails.Image" alt="@Model.ProductDetails.Name" width="100px" height="300px" />
+				</div>
+				<div id="similar-product" class="carousel slide" data-ride="carousel">
+
+					<!-- Wrapper for slides -->
+					<div class="carousel-inner">
+						<div class="item">
+							<a href=""><img src="images/product-details/similar1.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar2.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar3.jpg" alt=""></a>
+						</div>
+						<div class="item">
+							<a href=""><img src="images/product-details/similar1.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar2.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar3.jpg" alt=""></a>
+						</div>
+						<div class="item">
+							<a href=""><img src="images/product-details/similar1.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar2.jpg" alt=""></a>
+							<a href=""><img src="images/product-details/similar3.jpg" alt=""></a>
+						</div>
+
+					</div>
+
+					<!-- Controls -->
+					<a class="left item-control" href="#similar-product" data-slide="prev">
+						<i class="fa fa-angle-left"></i>
+					</a>
+					<a class="right item-control" href="#similar-product" data-slide="next">
+						<i class="fa fa-angle-right"></i>
+					</a>
+				</div>
+
+			</div>
+			<div class="col-sm-7">
+				<div class="product-information">
+					<!--/product-information-->
+					<h2>@Model.ProductDetails.Name</h2>
+					<span>
+						<span>@Model.ProductDetails.Price.ToString("#,#00 VNĐ")</span>
+						<label>Quantity:@Model.ProductDetails.Quantity</label>
+						<br />
+						@if (User.Identity?.IsAuthenticated ?? false)
+                            {
+						@if (Model.ProductDetails.Quantity > 0)
+						{
+								<button class="btn btn-default add-to-cart " data-product_id="@Model.ProductDetails.Id"><i class="fa fa-shopping-cart"></i>Thêm giỏ hàng</button>
+						}
+						else
+						{
+							<button type="button" class="btn btn-default"><i class="fa fa-shopping-cart"></i>Hết hàng</button>
+						}
+							}
+					</span>
+					<p><b>Availability:</b> In Stock</p>
+					<p><b>Condition:</b> New</p>
+					<p><b>Brand:</b> @Model.ProductDetails.Brand.Name</p>
+					<p><b>Category:</b> @Model.ProductDetails.Category.Name</p>
+
+                    @* Hiển thị rating trung bình *@
+                    <p>
+                        <b>Đánh giá:</b>
+                        @if (Model.TotalReviews > 0)
+                        {
+                            <span>@Model.AverageRating.ToString("0.0") / 5 (@Model.TotalReviews đánh giá)</span>
+                        }
+                        else
+                        {
+                            <span>Chưa có đánh giá</span>
+                        }
+                    </p>
+                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#sizeGuideModal" style="margin-bottom: 10px; margin-top: 5px;">
+                        <i class="fa fa-ruler"></i> Kiểm tra Size
+                    </button>
+                    <br/>
+					<a href=""><img src="images/product-details/share.png" class="share img-responsive" alt="" /></a>
+				</div><!--/product-information-->
+			</div>
+		</div><!--/product-details-->
+
+		<div class="category-tab shop-details-tab">
+			<!--category-tab-->
+			<div class="col-sm-12">
+				<ul class="nav nav-tabs">
+					<li class="active"><a href="#details" data-toggle="tab">Details</a></li>
+                    <li><a href="#reviews" data-toggle="tab">Đánh giá (@Model.TotalReviews)</a></li>
+				</ul>
+			</div>
+			<div class="tab-content">
+				<div class="tab-pane fade active in" id="details">
+
+					@Html.Raw(Model.ProductDetails.Description)
+
+				</div>
+
+                <div class="tab-pane fade" id="reviews">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h4>Đánh giá sản phẩm</h4>
+
+                            @if (Model.TotalReviews > 0)
+                            {
+                                foreach (var review in Model.Reviews)
+                                {
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading">
+                                            <strong>@review.UserName</strong>
+                                            <span class="text-warning">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= review.Stars)
+                                                    {
+                                                        @:<i class="fa fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        @:<i class="fa fa-star-o"></i>
+                                                    }
+                                                }
+                                            </span>
+                                            <span class="text-muted pull-right">@review.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </div>
+                                        <div class="panel-body">
+                                            @review.Comment
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+                            }
+
+                            <hr />
+
+                            @if (Model.CanReview)
+                            {
+                                <h5>Viết đánh giá của bạn</h5>
+                                <form asp-action="CommentProduct" asp-controller="Product" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productId" value="@Model.ProductDetails.Id" />
+
+                                    <div class="form-group">
+                                        <label>Số sao</label>
+                                        <select name="stars" class="form-control" required>
+                                            <option value="5">5 sao</option>
+                                            <option value="4">4 sao</option>
+                                            <option value="3">3 sao</option>
+                                            <option value="2">2 sao</option>
+                                            <option value="1">1 sao</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Nội dung đánh giá</label>
+                                        <textarea name="comment" class="form-control" rows="4" required></textarea>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <p class="text-muted">
+                                    Chỉ những khách đã mua hàng và đơn đã giao thành công mới được đánh giá. 
+                                    Nếu bạn đã mua sản phẩm này, hãy đăng nhập để gửi đánh giá.
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+			</div>
+		</div><!--/category-tab-->
+
+		<div class="recommended_items">
+			<!--recommended_items-->
+			<h2 class="title text-center">Related Products</h2>
+
+			<div id="recommended-item-carousel" class="carousel slide" data-ride="carousel">
+				<div class="carousel-inner">
+
+					<div class="item active">
+						@foreach (var relatedProduct in @ViewBag.RelatedProducts as IEnumerable<ProductModel>)
+						{
+							<div class="col-sm-4">
+								<div class="product-image-wrapper">
+									<div class="single-products">
+
+
+										<div class="productinfo text-center">
+											<a asp-action="Detail" asp-controller="Product" asp-route-Id="@relatedProduct.Id">
+												<img src="~/media/products/@relatedProduct.Image" alt="@relatedProduct.Name" width="100px" height="200px" />
+												<h2>@relatedProduct.Price.ToString("#,##0 VNĐ")</h2>
+												<p>@relatedProduct.Name</p>
+												<p>Danh mục: @relatedProduct.Category.Name</p>
+												<p>Thương hiệu: @relatedProduct.Brand.Name</p>
+											</a>
+
+										</div>
+
+
+									</div>
+
+								</div>
+							</div>
+						}
+
+					</div>
+
+				</div>
+				<a class="left recommended-item-control" href="#recommended-item-carousel" data-slide="prev">
+					<i class="fa fa-angle-left"></i>
+				</a>
+				<a class="right recommended-item-control" href="#recommended-item-carousel" data-slide="next">
+					<i class="fa fa-angle-right"></i>
+				</a>
+			</div>
+
+		</div><!--/recommended_items-->
+
+	</div>
+</div>
+
+<!-- Modal Kiểm tra Size -->
+<div class="modal fade" id="sizeGuideModal" tabindex="-1" role="dialog" aria-labelledby="sizeGuideModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title text-center" id="sizeGuideModalLabel" style="font-weight:bold; color: #FE980F;">HƯỚNG DẪN CHỌN SIZE VÒNG TAY</h4>
+      </div>
+      <div class="modal-body">
+        <h5 style="color: #FE980F;"><b>1. Cách đo chu vi cổ tay:</b></h5>
+        <p>- <b>Bước 1:</b> Dùng thước dây hoặc một sợi dây/giấy nhỏ quấn quanh cổ tay nơi bạn muốn đeo vòng.</p>
+        <p>- <b>Bước 2:</b> Đánh dấu điểm giao nhau.</p>
+        <p>- <b>Bước 3:</b> Dùng thước kẻ đo chiều dài đoạn dây vừa đo.</p>
+        
+        <hr/>
+        
+        <h5 style="color: #FE980F;"><b>2. Bảng size tham khảo:</b></h5>
+        <table class="table table-striped table-bordered text-center">
+            <thead style="background-color: #FE980F; color: white;">
+                <tr>
+                    <th class="text-center">Chu vi cổ tay (cm)</th>
+                    <th class="text-center">Size Vòng Gợi Ý</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>13 - 14.5 cm</td>
+                    <td><b>S (15-16cm)</b></td>
+                </tr>
+                <tr>
+                    <td>15 - 16.5 cm</td>
+                    <td><b>M (17-18cm)</b></td>
+                </tr>
+                <tr>
+                    <td>17 - 18.5 cm</td>
+                    <td><b>L (19-20cm)</b></td>
+                </tr>
+                 <tr>
+                    <td>> 19 cm</td>
+                    <td><b>XL (>21cm)</b></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-danger"><i>*Lưu ý: Nếu bạn thích đeo rộng thoải mái, hãy cộng thêm 1.5 - 2cm vào chu vi cổ tay.</i></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+@section Scripts {
+	@{
+		await Html.RenderPartialAsync("_ValidationScriptsPartial");
+	}
+	<script>
+		
+			$('.add-to-cart').click(function () {
+    var Id = $(this).data("product_id");
+
+    $.ajax({
+        type: "POST",
+        url: "@Url.Action("Add","Cart")",
+        data: { Id: Id },
+        success: function (result) {
+            if (result.success) {
+                Swal.fire(result.message);
+            }
+        },
+        error: function() {
+            Swal.fire("Lỗi khi thêm sản phẩm!");
+        }
+    });
+});
+
+		
+	</script>
+}

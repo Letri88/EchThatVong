@@ -1,0 +1,112 @@
+@model IEnumerable<OrderModel>
+@{
+    ViewData["title"] = "Danh sách đơn hàng";
+  
+    Paginate pager = new Paginate();
+    int pageNo = 0;
+    if(ViewBag.Pager != null)
+    {
+        pager = ViewBag.Pager;
+        pageNo = pager.CurrentPage;
+    
+}
+}
+<h3>Danh sách đơn hàng</h3>
+<table class="table" id="myTable">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Mã đơn hàng</th>
+            <th scope="col">Email</th>
+            <th scope="col">Địa chỉ giao hàng</th>
+            <th scope="col">Ngày tạo đơn hàng</th>
+            <th scope="col">Phí vận chuyển</th>
+            <th scope="col">Mã giảm giá</th>
+            <th scope="col">Trạng thái đơn hàng</th>
+            <th scope="col">Thanh toán</th>
+            <th scope="col">Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <th></th>
+                <td scope="row">@item.Orders_Code</td>
+                <td>@item.UserName</td>
+                <td>
+                    @item.HouseNumber, @item.WardName, @item.DistrictName, @item.CityName
+                </td>
+                <td>@item.CreatedDate</td>
+                <td>@item.ShippingCost.ToString("#,##0 VNĐ")</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.CouponCode))
+                    {
+                        <span class="badge bg-success">@item.CouponCode</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>
+                    @switch (item.Status)
+                    {
+                        case 0:
+                            @:<span class="badge bg-secondary">Đã đặt</span>
+                            break;
+                        case 1:
+                            @:<span class="badge bg-info">Đang chuẩn bị</span>
+                            break;
+                        case 2:
+                            @:<span class="badge bg-primary">Đang giao</span>
+                            break;
+                        case 3:
+                            @:<span class="badge bg-success">Hoàn thành</span>
+                            break;
+                        case 4:
+                            @:<span class="badge bg-danger">Đã hủy</span>
+                            break;
+                        default:
+                            @:<span class="badge bg-light text-dark">Không xác định</span>
+                            break;
+                    }
+                </td>
+                <td>
+                    @switch (item.PaymentStatus)
+                    {
+                        case 0:
+                            @:<span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                            break;
+                        case 1:
+                            @:<span class="badge bg-success">Đã thanh toán</span>
+                            break;
+                        case 2:
+                            @:<span class="badge bg-danger">Thanh toán thất bại</span>
+                            break;
+                        default:
+                            @:<span class="badge bg-light text-dark">Không xác định</span>
+                            break;
+                    }
+                    @if (!string.IsNullOrEmpty(item.PaymentMethod))
+                    {
+                        <div class="small text-muted mt-1">@item.PaymentMethod</div>
+                    }
+                </td>
+
+                <td>
+                    <a asp-action="ViewOrder" class="btn btn-warning btn-sm" asp-controller="Order" asp-route-ordercode="@item.Orders_Code">Xem</a>
+                    <a asp-action="Delete" class="btn btn-danger btn-sm confirmDeletion" asp-controller="Order" asp-route-Id="@item.Id">Xóa</a>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+</table>
+<partial name="_paging" model="@pager" />
+@section Scripts {
+    <script>
+        let table = new DataTable('#myTable');
+    </script>
+    
+}

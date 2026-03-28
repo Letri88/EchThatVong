@@ -1,0 +1,191 @@
+﻿@using ShoesShop.Models.ViewModels
+@model CartItemViewModel
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section id="cart_items" class="cart-page">
+    <div class="container">
+        <h3 class="cart-title">🛒 Giỏ hàng của bạn</h3>
+
+        @if (Model.CartItems.Count > 0)
+        {
+            <div class="row">
+                <!-- DANH SÁCH SẢN PHẨM -->
+                <div class="col-md-8">
+                    <div class="table-responsive cart-box">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th class="text-center">Giá</th>
+                                    <th class="text-center">Số lượng</th>
+                                    <th class="text-center">Thành tiền</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.CartItems)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="cart-product">
+                                                <img src="~/media/products/@item.Image" alt="@item.ProductName" />
+                                                <div>
+                                                    <h5>@item.ProductName</h5>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="text-center price">
+                                            @item.Price.ToString("#,##0 VNĐ")
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="quantity-control">
+                                                <a asp-action="Decrease" asp-controller="Cart" asp-route-id="@item.ProductId">−</a>
+                                                <span>@item.Quantity</span>
+                                                <a asp-action="Increase" asp-controller="Cart" asp-route-id="@item.ProductId">+</a>
+                                            </div>
+                                        </td>
+
+                                        <td class="text-center total">
+                                            @((item.Quantity * item.Price).ToString("#,##0 VNĐ"))
+                                        </td>
+
+                                        <td class="text-center">
+                                            <a class="remove-btn"
+                                               asp-action="Remove"
+                                               asp-controller="Cart"
+                                               asp-route-id="@item.ProductId">
+                                                ✖
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TỔNG TIỀN -->
+                <div class="col-md-4">
+                    <div class="summary-box">
+                        <h4>Tổng giỏ hàng</h4>
+                        <p class="grand-total">
+                            @Model.GrandTotal.ToString("#,##0 VNĐ")
+                        </p>
+
+                        <a class="btn btn-danger btn-block"
+                           asp-controller="Cart"
+                           asp-action="Clear">
+                            Xóa giỏ hàng
+                        </a>
+
+                        <a class="btn btn-primary btn-block"
+                           asp-controller="Checkout"
+                           asp-action="Index">
+                            Thanh toán
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-cart">
+                <h4>🛒 Giỏ hàng trống</h4>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                    Tiếp tục mua sắm
+                </a>
+            </div>
+        }
+    </div>
+</section>
+<style>
+    .cart-page {
+        padding: 30px 0;
+    }
+
+    .cart-title {
+        margin-bottom: 25px;
+        font-weight: 600;
+    }
+
+    .cart-box {
+        background: #fff;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .cart-product {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+        .cart-product img {
+            width: 80px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+    .price,
+    .total {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .quantity-control {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+        .quantity-control a {
+            padding: 4px 10px;
+            font-size: 16px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .quantity-control span {
+            padding: 4px 12px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+    .remove-btn {
+        color: #d9534f;
+        font-size: 18px;
+    }
+
+    .summary-box {
+        background: #fff;
+        padding: 20px;
+        border-radius: 6px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+        .summary-box h4 {
+            margin-bottom: 15px;
+        }
+
+    .grand-total {
+        font-size: 22px;
+        font-weight: bold;
+        color: #d9534f;
+        margin-bottom: 20px;
+    }
+
+    .empty-cart {
+        text-align: center;
+        padding: 50px 0;
+    }
+</style>

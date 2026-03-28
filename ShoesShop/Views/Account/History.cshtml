@@ -1,0 +1,164 @@
+@model IEnumerable<OrderModel>
+@{
+    ViewData["title"] = "Lịch sử đơn hàng";
+
+    Paginate pager = new Paginate();
+    int pageNo = 0;
+    if (ViewBag.Pager != null)
+    {
+        pager = ViewBag.Pager;
+        pageNo = pager.CurrentPage;
+
+    }
+}
+<h3>Danh sách đơn hàng @ViewBag.UserEmail</h3>
+<table class="table" id="myTable">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Mã đơn hàng</th>
+            <th scope="col">Email</th>
+            <th scope="col">Địa chỉ giao hàng</th>
+            <th scope="col">Ngày tạo đơn hàng</th>
+            <th scope="col">Trạng thái đơn hàng</th>
+            <th scope="col">Thanh toán</th>
+            <th scope="col">Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <th></th>
+                <td scope="row">@item.Orders_Code</td>
+                <td>@item.UserName</td>
+                <td>
+                    @item.HouseNumber, @item.WardName, @item.DistrictName, @item.CityName
+                </td>
+                <td>@item.CreatedDate</td>
+                <td>
+                    @switch (item.Status)
+                    {
+                        case 0:
+                            @:<span class="badge badge-secondary">Đã đặt</span>
+                            break;
+                        case 1:
+                            @:<span class="badge badge-info">Đang chuẩn bị</span>
+                            break;
+                        case 2:
+                            @:<span class="badge badge-primary">Đang giao</span>
+                            break;
+                        case 3:
+                            @:<span class="badge badge-success">Hoàn thành</span>
+                            break;
+                        case 4:
+                            @:<span class="badge badge-danger">Đã hủy</span>
+                            break;
+                        default:
+                            @:<span class="badge badge-light">Không xác định</span>
+                            break;
+                    }
+                </td>
+                <td>
+                    @switch (item.PaymentStatus)
+                    {
+                        case 0:
+                            @:<span class="badge badge-warning">Chờ thanh toán</span>
+                            break;
+                        case 1:
+                            @:<span class="badge badge-success">Đã thanh toán</span>
+                            break;
+                        case 2:
+                            @:<span class="badge badge-danger">Thanh toán thất bại</span>
+                            break;
+                        default:
+                            @:<span class="badge badge-light">Không xác định</span>
+                            break;
+                    }
+                    @if (!string.IsNullOrEmpty(item.PaymentMethod))
+                    {
+                        <div class="small text-muted mt-1">@item.PaymentMethod</div>
+                    }
+                </td>
+
+                <td>
+                    @if (item.Status == 0)
+                    {
+                        <button type="button"
+                                class="btn btn-danger btn-sm btn-cancel-order mb-2"
+                                data-ordercode="@item.Orders_Code">
+                            Hủy đơn hàng
+                        </button>
+                    }
+
+                    @if (item.PaymentStatus == 0 && item.Status != 4)
+                    {
+                        <form asp-action="UploadTransferProof"
+                              asp-controller="Account"
+                              method="post"
+                              enctype="multipart/form-data"
+                              class="border rounded p-2 mt-1">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="orderCode" value="@item.Orders_Code" />
+                            <div class="mb-1">
+                                <label class="small mb-0">Mã giao dịch</label>
+                                <input type="text" name="transferCode" class="form-control form-control-sm"
+                                       value="@item.TransferCode" placeholder="Nhập mã giao dịch (nếu có)" />
+                            </div>
+                            <div class="mb-1">
+                                <label class="small mb-0">Ảnh hóa đơn</label>
+                                <input type="file" name="transferSlip" class="form-control form-control-sm" accept="image/*" />
+                            </div>
+                            @if (!string.IsNullOrEmpty(item.TransferSlipPath))
+                            {
+                                <div class="mt-1">
+                                    <a href="@item.TransferSlipPath" target="_blank" class="small">Xem ảnh đã gửi</a>
+                                </div>
+                            }
+                            <button type="submit" class="btn btn-primary btn-sm mt-1 w-100">
+                                Gửi xác nhận chuyển khoản
+                            </button>
+                        </form>
+                    }
+                    else if (item.PaymentStatus == 1)
+                    {
+                        <span class="text-success small">Đã xác nhận thanh toán</span>
+                    }
+                </td>
+
+
+            </tr>
+        }
+
+    </tbody>
+</table>
+@section Scripts {
+    <script>
+        let table = new DataTable('#myTable');
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.btn-cancel-order').forEach(button => {
+                button.addEventListener('click', function () {
+                    const orderCode = this.getAttribute('data-ordercode');
+
+                    Swal.fire({
+                        title: 'Xác nhận hủy đơn hàng?',
+                        text: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Có, hủy ngay',
+                        cancelButtonText: 'Không'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = `/Account/CancelOrder?ordercode=${orderCode}`;
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+}

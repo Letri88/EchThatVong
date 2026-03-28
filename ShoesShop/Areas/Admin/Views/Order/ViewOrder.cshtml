@@ -1,0 +1,187 @@
+@model IEnumerable<OrderDetails>
+
+@{
+    ViewData["title"] = "Order Details";
+    decimal total = 0; // Store total amount
+    decimal subtotal = 0;
+   
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Order Details</title>
+</head>
+<body>
+    <h3>Order Details</h3>
+
+    <div class="mb-3">
+        <p><strong>Mã đơn hàng:</strong> @ViewBag.OrderCode</p>
+        <p><strong>Trạng thái thanh toán:</strong>
+            @switch ((int)ViewBag.PaymentStatus)
+            {
+                case 0:
+                    @:<span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                    break;
+                case 1:
+                    @:<span class="badge bg-success">Đã thanh toán</span>
+                    break;
+                case 2:
+                    @:<span class="badge bg-danger">Thanh toán thất bại</span>
+                    break;
+                default:
+                    @:<span class="badge bg-light text-dark">Không xác định</span>
+                    break;
+            }
+        </p>
+        @if (!string.IsNullOrEmpty((string)ViewBag.PaymentMethod))
+        {
+            <p><strong>Phương thức:</strong> @ViewBag.PaymentMethod</p>
+        }
+        @if (!string.IsNullOrEmpty((string)ViewBag.TransferCode))
+        {
+            <p><strong>Mã giao dịch:</strong> @ViewBag.TransferCode</p>
+        }
+        @if (!string.IsNullOrEmpty((string)ViewBag.TransferSlipPath))
+        {
+            <p>
+                <strong>Ảnh hóa đơn:</strong>
+                <a href="@ViewBag.TransferSlipPath" target="_blank">Xem ảnh</a>
+            </p>
+        }
+
+        @if ((int)ViewBag.PaymentStatus != 1)
+        {
+            <form asp-action="ConfirmPayment"
+                  asp-controller="Order"
+                  asp-area="Admin"
+                  method="post" class="mt-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ordercode" value="@ViewBag.OrderCode" />
+                <button type="submit" class="btn btn-success btn-sm">
+                    Đã nhận tiền - Xác nhận thanh toán
+                </button>
+            </form>
+        }
+    </div>
+
+
+    <div class="table table-responsive">
+    <table class="table" id="detail_order">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Order Code</th>
+                <th>UserName</th>
+                <th>Product Name</th>
+                <th>Product Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+              
+                    
+            </tr>
+        </thead>
+        <tbody>
+           
+            @foreach (var item in Model)
+            {
+                    subtotal = item.Quantity * item.Price;
+                    <tr>
+                    <input type="hidden" asp-for="@item.OrderCode" class="getId" />
+                    <td>@item.Id</td>
+                    <td>@item.OrderCode</td>
+                    <td>@item.UserName</td>
+                    <td>@item.Product.Name</td>
+                    <td>@item.Price.ToString("#,##0 VNĐ")</td>
+                    <td>@item.Quantity</td>
+                    <td>@subtotal.ToString("#,##0 VNĐ")</td>
+
+                </tr>
+            }
+            <tr>
+                <td>Tổng thanh toán:</td>
+                <td></td>
+                <td></td>
+                <td></td>
+
+                    <td><strong>@ViewBag.FinalTotal.ToString("#,##0") VNĐ</strong></td>
+                    <td>
+                    <td>
+                            @if (ViewBag.Status != 2)
+                            {
+                            <select class="form-control select-update-order"
+                                    data-ordercode="@ViewBag.OrderCode">
+                                <option value="0" selected="@(ViewBag.Status == 0)">
+                                    Đã đặt
+                                </option>
+                                <option value="1" selected="@(ViewBag.Status == 1)">
+                                    Đang chuẩn bị
+                                </option>
+                                <option value="2" selected="@(ViewBag.Status == 2)">
+                                    Đang giao
+                                </option>
+                                <option value="3" selected="@(ViewBag.Status == 3)">
+                                    Hoàn thành
+                                </option>
+                                <option value="4" selected="@(ViewBag.Status == 4)">
+                                    Đã hủy
+                                </option>
+                            </select>
+                            }
+                            else
+                            {
+                            <span class="text-danger">Đơn hàng đã bị hủy</span>
+                            }
+                    </td>
+
+
+            </tr>
+        </tbody>
+    </table>
+   
+    </div>
+</body>
+
+</html>
+@section Scripts{
+    <script>
+        new DataTable('#detail_order', {
+            layout: {
+                topStart: {
+                    buttons: ['pdf','print']
+                }
+            }
+        });
+
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('.select-update-order').change(function () {
+                var status = $(this).val(); //status = 1
+                var ordercode = $('.getId').val(); //
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("UpdateOrder")",
+                    data: { status: status, ordercode: ordercode }, // Send data to the server
+                   
+                    success: function (result) {
+                        // Handle successful update
+                        if (result.success) {
+                          
+                            Swal.fire("Cập nhật đơn hàng thành công.");
+                        } else {
+                          
+                            Swal.fire("Cập nhật đơn hàng thất bại." + result.message);
+                           
+                        }
+                    }
+                   
+                });
+            });
+        });
+    </script>
+}
+
+    

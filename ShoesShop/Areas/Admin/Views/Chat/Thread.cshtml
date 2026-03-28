@@ -1,0 +1,481 @@
+@model IEnumerable<ShoesShop.Models.ChatMessageModel>
+@{
+    ViewData["Title"] = "Chat với " + (ViewBag.UserName ?? "Khách");
+}
+
+<div class="admin-thread-shell">
+    <div class="admin-thread-card">
+        <div class="admin-thread-header">
+            <div class="admin-thread-left">
+                <div class="admin-thread-avatar" aria-hidden="true">
+                    @(((string)(ViewBag.UserName ?? "K")).Trim().Substring(0, 1).ToUpper())
+                </div>
+                <div class="admin-thread-meta">
+                    <div class="admin-thread-name">@((string)(ViewBag.UserName ?? "Khách"))</div>
+                    <div class="admin-thread-status">Đang hoạt động</div>
+                </div>
+            </div>
+            <div class="admin-thread-actions">
+                <a asp-action="Index" class="admin-thread-action" title="Quay lại"><i class="fa fa-arrow-left"></i></a>
+            </div>
+        </div>
+
+        <div id="admin-chat-body" class="admin-thread-body">
+            @foreach (var m in Model)
+            {
+                <div class="admin-msg-row chat-row @(m.IsFromAdmin ? "from-shop" : "from-user")" data-id="@m.Id">
+                    <div class="admin-bubble">
+                        @if (!string.IsNullOrEmpty(m.Message))
+                        {
+                            <div class="admin-bubble-text">@m.Message</div>
+                        }
+                        @if (!string.IsNullOrEmpty(m.ImagePath))
+                        {
+                            <img src="@m.ImagePath" class="admin-bubble-image" alt="Ảnh đính kèm" />
+                        }
+                    </div>
+                    <div class="admin-msg-meta">@m.CreatedAt.ToString("HH:mm dd/MM")</div>
+                </div>
+            }
+        </div>
+
+        <div class="admin-thread-footer">
+            <form asp-action="SendReply" method="post" enctype="multipart/form-data" class="admin-thread-form" id="admin-chat-form">
+                <input type="hidden" name="conversationId" value="@ViewBag.ConversationId" />
+
+                <label class="admin-attach-btn" title="Gửi hình">
+                    <input type="file" name="image" accept="image/*" id="admin-image" />
+                    <i class="fa fa-picture-o"></i>
+                </label>
+
+                <div id="admin-image-preview" class="admin-inline-preview" style="display:none;"></div>
+
+                <textarea name="message" class="admin-thread-input" rows="1" placeholder="Nhập tin nhắn..."></textarea>
+
+                <button type="submit" class="admin-send-btn" title="Gửi">
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var conversationId = '@ViewBag.ConversationId';
+            var $body = $('#admin-chat-body');
+            var lastId = 0;
+            var firstId = 0;
+            var isLoadingOlder = false;
+            var $imgInput = $('#admin-image');
+            var $imgPreview = $('#admin-image-preview');
+            var pendingPreviewUrl = null;
+            var $form = $('#admin-chat-form');
+            var $textInput = $form.find('textarea[name="message"]');
+
+            $body.find('.chat-row').each(function () {
+                var id = parseInt($(this).data('id'));
+                if (id > lastId) lastId = id;
+                if (firstId === 0 || id < firstId) firstId = id;
+            });
+
+            function appendMessages(messages) {
+                messages.forEach(function (m) {
+                    var cls = m.isFromAdmin ? 'from-shop' : 'from-user';
+                    var html = '<div class="admin-msg-row chat-row ' + cls + '" data-id="' + m.id + '">'
+                        + '<div class="admin-bubble">';
+
+                    if (m.message) {
+                        html += '<div class="admin-bubble-text">' + $('<div/>').text(m.message).html() + '</div>';
+                    }
+                    if (m.imagePath) {
+                        html += '<img src="' + m.imagePath + '" class="admin-bubble-image" alt="Ảnh đính kèm" />';
+                    }
+
+                    html += '</div><div class="admin-msg-meta">' + m.createdAt + '</div></div>';
+                    $body.append(html);
+                    lastId = m.id;
+                });
+                $body.scrollTop($body[0].scrollHeight);
+            }
+
+            function poll() {
+                $.get('@Url.Action("GetThreadJson","Chat", new { area = "Admin" })', { id: conversationId, lastId: lastId })
+                    .done(function (res) {
+                        if (res && res.success && Array.isArray(res.messages) && res.messages.length) {
+                            appendMessages(res.messages);
+                        }
+                    });
+            }
+
+            setInterval(poll, 3000);
+
+            function prependMessages(messages) {
+                if (!messages || !messages.length) return;
+
+                var prevScrollHeight = $body[0].scrollHeight;
+                var prevScrollTop = $body.scrollTop();
+
+                var htmlAll = '';
+                messages.forEach(function (m) {
+                    var cls = m.isFromAdmin ? 'from-shop' : 'from-user';
+                    var html = '<div class="admin-msg-row chat-row ' + cls + '" data-id="' + m.id + '">'
+                        + '<div class="admin-bubble">';
+                    if (m.message) {
+                        html += '<div class="admin-bubble-text">' + $('<div/>').text(m.message).html() + '</div>';
+                    }
+                    if (m.imagePath) {
+                        html += '<img src="' + m.imagePath + '" class="admin-bubble-image" alt="Ảnh đính kèm" />';
+                    }
+                    html += '</div><div class="admin-msg-meta">' + m.createdAt + '</div></div>';
+                    htmlAll += html;
+                    if (firstId === 0 || m.id < firstId) firstId = m.id;
+                });
+
+                $body.prepend(htmlAll);
+
+                // Giữ vị trí scroll để không bị "giật" khi prepend
+                var newScrollHeight = $body[0].scrollHeight;
+                $body.scrollTop(prevScrollTop + (newScrollHeight - prevScrollHeight));
+            }
+
+            function loadOlder() {
+                if (isLoadingOlder || firstId <= 0) return;
+                isLoadingOlder = true;
+
+                $.get('@Url.Action("GetThreadOlderJson","Chat", new { area = "Admin" })', { id: conversationId, beforeId: firstId, pageSize: 10 })
+                    .done(function (res) {
+                        if (res && res.success && Array.isArray(res.messages) && res.messages.length) {
+                            prependMessages(res.messages);
+                        }
+                    })
+                    .always(function () {
+                        isLoadingOlder = false;
+                    });
+            }
+
+            // Kéo lên gần top thì load thêm tin nhắn cũ
+            $body.on('scroll', function () {
+                if ($body.scrollTop() <= 40) {
+                    loadOlder();
+                }
+            });
+
+            function clearSelectedImage(keepFile) {
+                if (!keepFile) {
+                    $imgInput.val('');
+                }
+                if (pendingPreviewUrl) {
+                    URL.revokeObjectURL(pendingPreviewUrl);
+                    pendingPreviewUrl = null;
+                }
+                $imgPreview.hide().empty();
+            }
+
+            $imgInput.on('change', function () {
+                clearSelectedImage(true);
+                var file = this.files && this.files[0];
+                if (!file) return;
+                pendingPreviewUrl = URL.createObjectURL(file);
+                $imgPreview.html(
+                    '<div class="admin-preview-chip" title="Ảnh đã chọn">'
+                    + '<img src="' + pendingPreviewUrl + '" class="admin-preview-thumb" alt="Xem trước ảnh" />'
+                    + '<button type="button" class="admin-preview-remove" aria-label="Bỏ ảnh"><i class="fa fa-times"></i></button>'
+                    + '</div>'
+                ).show();
+            });
+
+            $(document).on('click', '.admin-preview-remove', function () {
+                clearSelectedImage(false);
+            });
+
+            // Gửi tin nhắn bằng AJAX (không reload trang)
+            $form.on('submit', function (e) {
+                e.preventDefault();
+
+                var text = ($textInput.val() || '').toString().trim();
+                var hasImage = $imgInput[0] && $imgInput[0].files && $imgInput[0].files.length > 0;
+                if (!text && !hasImage) return;
+
+                var fd = new FormData(this);
+
+                $.ajax({
+                    url: '@Url.Action("SendReplyJson","Chat", new { area = "Admin" })',
+                    method: 'POST',
+                    processData: false,
+                    contentType: false,
+                    data: fd,
+                    success: function (res) {
+                        if (res && res.success && res.message) {
+                            // append ngay tin nhắn mới
+                            appendMessages([res.message]);
+                            $textInput.val('');
+                            clearSelectedImage(false);
+                        }
+                    }
+                });
+            });
+
+            // Scroll xuống cuối khi mở thread
+            setTimeout(function () { $body.scrollTop($body[0].scrollHeight); }, 0);
+        })();
+    </script>
+}
+
+<style>
+    .admin-thread-shell {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 30px;
+    }
+
+    .admin-thread-card {
+        width: 100%;
+        max-width: 900px;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(0,0,0,0.06);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 70vh;
+    }
+
+    .admin-thread-header {
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .admin-thread-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .admin-thread-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #6c5ce7;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex: 0 0 auto;
+    }
+
+    .admin-thread-name {
+        font-weight: 800;
+        font-size: 14px;
+        color: #111;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .admin-thread-status {
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    .admin-thread-action {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #2f7cf6;
+        text-decoration: none;
+    }
+
+    .admin-thread-action:hover {
+        background: rgba(47,124,246,0.10);
+        text-decoration: none;
+    }
+
+    .admin-thread-body {
+        flex: 1;
+        padding: 12px;
+        background: #f5f6f7;
+        overflow-y: auto;
+    }
+
+    .admin-msg-row {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+        max-width: 82%;
+    }
+
+    .admin-msg-row.from-user {
+        margin-right: auto;
+        align-items: flex-start;
+    }
+
+    .admin-msg-row.from-shop {
+        margin-left: auto;
+        align-items: flex-end;
+    }
+
+    .admin-bubble {
+        background: #fff;
+        color: #111;
+        padding: 8px 10px;
+        border-radius: 18px;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .from-shop .admin-bubble {
+        background: #2f7cf6;
+        color: #fff;
+        border-bottom-right-radius: 6px;
+    }
+
+    .from-user .admin-bubble {
+        border-bottom-left-radius: 6px;
+    }
+
+    .admin-bubble:has(> .admin-bubble-image:only-child) {
+        background: transparent !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-bubble-text {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .admin-bubble-image {
+        display: block;
+        margin-top: 6px;
+        max-width: 260px;
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .admin-msg-meta {
+        margin-top: 4px;
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    .admin-thread-footer {
+        padding: 10px 12px;
+        border-top: 1px solid rgba(0,0,0,0.06);
+        background: #fff;
+    }
+
+    .admin-thread-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .admin-attach-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: #2f7cf6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .admin-attach-btn:hover {
+        background: rgba(47,124,246,0.10);
+    }
+
+    .admin-attach-btn input[type="file"] {
+        display: none;
+    }
+
+    .admin-thread-input {
+        flex: 1;
+        border-radius: 18px;
+        border: 1px solid #e5e7eb;
+        padding: 10px 12px;
+        font-size: 13px;
+        background: #fff;
+        resize: none;
+        min-height: 40px;
+        max-height: 80px;
+    }
+
+    .admin-send-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: #2f7cf6;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(47,124,246,0.25);
+    }
+
+    .admin-send-btn:hover {
+        box-shadow: 0 8px 18px rgba(47,124,246,0.28);
+    }
+
+    .admin-inline-preview {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .admin-preview-chip {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,0.08);
+        overflow: hidden;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+
+    .admin-preview-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .admin-preview-remove {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: none;
+        background: #fff;
+        color: #111;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+
+    .admin-preview-remove i {
+        font-size: 12px;
+    }
+</style>

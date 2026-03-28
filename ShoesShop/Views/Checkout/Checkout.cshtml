@@ -1,0 +1,696 @@
+@inject IHttpContextAccessor HttpContextAccessor
+@model ShoesShop.Models.ViewModels.CartItemViewModel
+@{
+    ViewData["Title"] = "Checkout";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<section id="cart_items">
+    <div class="container">
+        <div class="breadcrumbs">
+            <ol class="breadcrumb">
+                <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="active">Check out</li>
+            </ol>
+        </div>
+
+        <div class="step-one">
+            <h2 class="heading">Step 1: Xác nhận thông tin</h2>
+        </div>
+        <!-- Địa chỉ và ghi chú -->
+        <div class="shopper-informations mt-4 mb-4">
+            <div class="row">
+                <!-- Cột trái -->
+                <form asp-action="ProcessCheckout" id="checkoutForm" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="container">
+                        <div class="row">
+                            <!-- Cột trái: Địa chỉ giao hàng -->
+                            <div class="col-md-8">
+                                <div class="p-4 border rounded bg-light shadow-sm">
+                                    <h5><strong>Địa chỉ giao hàng</strong></h5>
+
+                                    @* Hiển thị địa chỉ mặc định (nếu có) *@
+                                    @if (Model.DefaultAddress != null)
+                                    {
+                                        <div class="alert alert-info p-2 mb-3">
+                                            <strong>Địa chỉ mặc định:</strong>
+                                            @Model.DefaultAddress.HouseNumber,
+                                            @Model.DefaultAddress.WardName,
+                                            @Model.DefaultAddress.DistrictName,
+                                            @Model.DefaultAddress.CityName
+                                        </div>
+
+                                        <input type="hidden" id="defaultHouseNumber" value="@Model.DefaultAddress.HouseNumber" />
+                                        <input type="hidden" id="defaultTinhId" value="@Model.DefaultAddress.City" />
+                                        <input type="hidden" id="defaultQuanId" value="@Model.DefaultAddress.District" />
+                                        <input type="hidden" id="defaultPhuongId" value="@Model.DefaultAddress.Ward" />
+                                    }
+
+                                    <!-- Số nhà, tên đường -->
+                                    <div class="form-group mb-3">
+                                        <label>Số nhà, tên đường</label>
+                                        <input type="text" id="houseNumber" name="houseNumber" class="form-control" placeholder="Ví dụ: 123 Nguyễn Văn Linh" required>
+                                    </div>
+
+                                    <!-- Tỉnh / Thành phố -->
+                                    <div class="form-group mb-3">
+                                        <label>Tỉnh / Thành phố</label>
+                                        <select class="form-select" id="tinh" name="tinh" required>
+                                            <option value="">Chọn Tỉnh / Thành phố</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Quận / Huyện -->
+                                    <div class="form-group mb-3">
+                                        <label>Quận / Huyện</label>
+                                        <select class="form-select" id="quan" name="quan" required>
+                                            <option value="">Chọn Quận / Huyện</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Phường / Xã -->
+                                    <div class="form-group mb-3">
+                                        <label>Phường / Xã</label>
+                                        <select class="form-select" id="phuong" name="phuong" required>
+                                            <option value="">Chọn Phường / Xã</option>
+                                        </select>
+                                    </div>
+                                    <input type="hidden" name="tinhId" id="tinhId" />
+                                    <input type="hidden" name="quanId" id="quanId" />
+                                    <input type="hidden" name="phuongId" id="phuongId" />
+
+                                    <input type="hidden" name="tinhName" id="tinhName" />
+                                    <input type="hidden" name="quanName" id="quanName" />
+                                    <input type="hidden" name="phuongName" id="phuongName" />
+                                    <!-- Input ẩn để lưu phí ship -->
+                                    <input type="hidden" id="shippingCost" name="shippingCost" value="@Model.ShippingCost" />
+                                    <input type="hidden" name="CouponCode" id="hiddenCouponCode" value="" />
+                                    <input type="hidden" name="Discount" id="hiddenDiscount" value="0" />
+                                    <input type="hidden" name="Amount" value="@Model.GrandTotal"/>
+                                    <input type="hidden" name="OrderId" value="@Guid.NewGuid().ToString()"/>
+                                    <input type="hidden" name="OrderInfo" value="Thanh toán Ếch thắt vòng"/>
+                                    <input type="hidden" name="FullName" value="Ếch thắt vòng"/>
+                                    <!-- Nút tính phí vận chuyển (chỉ client-side) -->
+                                    <button type="button" class="btn btn-primary btn-add-shipping w-100">Tính phí vận chuyển</button>
+
+                                    <div class="mt-3 p-3 border rounded bg-light">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>Phí ship:</strong>
+                                            <strong class="shipping-fee">@Model.ShippingCost.ToString("#,##0 VNĐ")</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                    <div class="border rounded p-3 bg-white mt-3">
+                                        <h5 class="mb-2"><strong>Mã giảm giá</strong></h5>
+                                        <select id="couponSelect" class="form-select mb-2">
+                                            <option value="">-- Chọn mã giảm giá --</option>
+                                        </select>
+                                        <button id="applyCoupon" type="button" class="btn btn-primary w-100 mt-2">
+                                            Áp dụng mã giảm giá
+                                        </button>
+                                        <div id="couponDescription" class="mt-2 text-success fw-bold"></div>
+                                    </div>
+                               
+                                <!-- Ghi chú đơn hàng + checkbox -->
+                                <div class="order-message p-4 border rounded bg-light shadow-sm mt-4">
+                                    <h5><strong>Ghi chú đơn hàng</strong></h5>
+                                    <div class="form-group mb-3">
+                                        <textarea name="Note" class="form-control" placeholder="Ghi chú cho đơn hàng (nếu có)" rows="8"></textarea>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="SameAddress" id="SameAddress" checked>
+                                        <label class="form-check-label" for="SameAddress">
+                                            Giao hàng đến cùng địa chỉ thanh toán
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cột phải: Xem lại & Thanh toán -->
+                            <div class="col-md-4">
+                                <div class="review-payment mt-4 mt-md-0">
+                                    <h2>Step 2: Xem lại & Thanh toán</h2>
+                                </div>
+
+                                <!-- Bảng sản phẩm -->
+                                <div class="table-responsive cart_info mt-3">
+                                    <table class="table table-condensed align-middle">
+                                        <thead>
+                                            <tr class="cart_menu text-center">
+                                                <td>Hình ảnh</td>
+                                                <td>Sản phẩm</td>
+                                                <td>Giá</td>
+                                                <td>Số lượng</td>
+                                                <td>Tổng</td>
+                                                <td></td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in Model.CartItems)
+                                            {
+                                                <tr class="text-center">
+                                                    <td><img src="~/media/products/@item.Image" alt="@item.ProductName" width="70" height="100" class="rounded"></td>
+                                                    <td>@item.ProductName</td>
+                                                    <td>@item.Price.ToString("#,##0 VNĐ")</td>
+                                                    <td>@item.Quantity</td>
+                                                    <td>@((item.Quantity * item.Price).ToString("#,##0 VNĐ"))</td>
+                                                </tr>
+                                            }
+                                            <tr class="text-end">
+                                                <td colspan="4"><strong>Tạm tính:</strong></td>
+                                                <td><strong>@Model.GrandTotal.ToString("#,##0") VNĐ</strong></td>
+                                            </tr>
+                                            <tr class="text-end">
+                                                <td colspan="4"><strong>Phí vận chuyển:</strong></td>
+                                                <td><strong class="shipping-fee">@Model.ShippingCost.ToString("#,##0 VNĐ")</strong></td>
+                                            </tr>
+                                            <tr class="text-end">
+                                                <td colspan="4"><strong>Giảm giá:</strong></td>
+                                                <td><strong id="discountAmount">0 VNĐ</strong></td>
+                                            </tr>
+                                            <tr class="text-end">
+                                                <td colspan="4"><strong>Tổng cộng:</strong></td>
+                                                <td><strong id="totalAmount">@(Model.GrandTotal + Model.ShippingCost).ToString("#,##0") VNĐ</strong></td>
+                                            </tr>
+                                        
+                                        </tbody>
+                                    </table>
+                                   
+                                </div>
+                                <div class="payment-method-selector mt-4 p-3 border rounded shadow-sm bg-white">
+                                    <h5 class="mb-2">Chọn phương thức thanh toán</h5>
+                                    <p class="text-muted small mb-3">Chọn ngân hàng để hiển thị mã QR tương ứng.</p>
+
+                                    <div class="d-grid gap-2">
+                                         <div class="btn-group w-100 d-flex" role="group">
+                                            <button type="button" class="btn btn-outline-primary payment-option-btn flex-fill" data-method="COD" data-bank="tpbank">
+                                                Chuyển khoản / QR
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <input type="hidden" id="paymentMethod" name="PaymentMethod" value="COD" />
+                                    <input type="hidden" id="selectedBank" name="SelectedBank" value="" />
+
+                                    <!-- Khu vực hiển thị QR - ban đầu ẩn -->
+                                    <div id="qrPreview" class="mt-4 d-none">
+                                        <div class="text-center">
+                                            <div id="qrContainer">
+                                                <!-- QR sẽ được chèn động vào đây bằng JS -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-end mt-4">
+                                    <button type="submit" class="btn btn-success btn-lg">Xác nhận thanh toán</button>
+                                    <a asp-controller="Cart" asp-action="Index" class="btn btn-secondary btn-lg">Quay lại giỏ hàng</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+    </div>
+</section>
+<style>
+    .payment-method-selector h5 {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .payment-option-btn {
+        font-weight: 600;
+        padding: 10px 0;
+    }
+
+        .payment-option-btn.active {
+            background-color: #5631c4;
+            color: #fff;
+            border-color: #5631c4;
+        }
+
+    .qr-placeholder {
+        font-size: 14px;
+    }
+
+    .qr-card {
+        border: 1px solid #e2e2e2;
+        border-radius: 16px;
+        padding: 18px;
+        background: #fafafa;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    }
+
+    .bank-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #5631c4;
+    }
+
+    .account-name {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        color: #888;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    .account-row {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+
+    .account-row .label {
+        color: #666;
+        margin-right: 6px;
+    }
+
+    .bank-logo {
+        width: 80px;
+        object-fit: contain;
+    }
+
+    .qr-image {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px dashed #dcdcdc;
+        background: #fff;
+    }
+
+    .copy-btn {
+        border: none;
+        background: #5631c4;
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+        .copy-btn:hover {
+            background: #7a4dff;
+        }
+</style>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // === BIẾN TOÀN CỤC ===
+            const $couponSelect = $('#couponSelect');
+            const $couponDescription = $('#couponDescription');
+            const $discountAmount = $('#discountAmount');
+            const $totalAmount = $('#totalAmount');
+            const $shippingDisplay = $('.shipping-fee');
+            const $shippingCostInput = $('#shippingCost');
+
+            // Địa chỉ mặc định (nếu có)
+            const defaultHouseNumber = $('#defaultHouseNumber').val();
+            const defaultTinhId = $('#defaultTinhId').val();
+            const defaultQuanId = $('#defaultQuanId').val();
+            const defaultPhuongId = $('#defaultPhuongId').val();
+
+            let originalGrandTotal = parseFloat("@Model.GrandTotal") || 0; // Số thô từ server
+            let shippingCost = 0;
+            let currentDiscount = 0;
+            let appliedCouponId = 0;
+
+            // Format tiền
+            function formatVND(amount) {
+                return amount.toLocaleString('vi-VN') + ' VNĐ';
+            }
+
+            // === CẬP NHẬT UI TỔNG TIỀN ===
+            function updateTotalUI() {
+                shippingCost = parseFloat($shippingCostInput.val()) || 0;
+                const totalBefore = originalGrandTotal + shippingCost;
+                const finalTotal = Math.max(0, totalBefore - currentDiscount);
+
+                $discountAmount.text(formatVND(currentDiscount));
+                $totalAmount.text(formatVND(finalTotal));
+
+                if (appliedCouponId > 0) {
+                    const $opt = $couponSelect.find(`option[value="${appliedCouponId}"]`);
+                    const code = $opt.text().split(' (')[0];
+                    const desc = currentDiscount > 0
+                        ? `Giảm <strong>${currentDiscount.toLocaleString('vi-VN')} VNĐ</strong> (${code})`
+                        : `Miễn phí vận chuyển (${code})`;
+                    $couponDescription.html(desc);
+                } else {
+                    $couponDescription.html('');
+                }
+            }
+
+            // === TẢI MÃ GIẢM GIÁ TỪ DB ===
+            function loadCoupons() {
+                $.get("@Url.Action("GetAvailableCoupons", "Checkout")")
+                    .done(function (coupons) {
+                        $couponSelect.empty().append('<option value="">-- Chọn mã giảm giá --</option>');
+                        if (coupons && coupons.length > 0) {
+                            coupons.forEach(c => {
+                                const desc = c.description || (c.isPercentage ? `Giảm ${c.discountValue}%` : `Giảm ${c.discountValue.toLocaleString('vi-VN')}₫`);
+                                const min = c.minOrderAmount > 0 ? ` (Tối thiểu ${c.minOrderAmount.toLocaleString('vi-VN')}₫)` : '';
+                                $couponSelect.append(
+                                    `<option value="${c.id}"
+                                                     data-percent="${c.isPercentage}"
+                                                     data-value="${c.discountValue}"
+                                                     data-min="${c.minOrderAmount}">
+                                                ${c.code} - ${desc}${min}
+                                            </option>`
+                                );
+                            });
+
+                            // TỰ ĐỘNG ÁP DỤNG nếu có trong Session
+                            const sessionCouponId = "@HttpContextAccessor.HttpContext?.Session.GetString("AppliedCouponId")";
+                            if (sessionCouponId && !isNaN(sessionCouponId)) {
+                                const id = parseInt(sessionCouponId);
+                                $couponSelect.val(id);
+                                applyCouponFromSession(id);
+                            }
+                        } else {
+                            $couponSelect.append('<option disabled>Không có mã giảm giá</option>');
+                        }
+                    })
+                    .fail(() => {
+                        $couponSelect.append('<option disabled>Lỗi tải mã</option>');
+                    });
+            }
+
+            // === ÁP DỤNG MÃ TỪ SESSION (khi reload) ===
+            function applyCouponFromSession(couponId) {
+                const $option = $couponSelect.find(`option[value="${couponId}"]`);
+                if ($option.length === 0) return;
+
+                const isPercentage = $option.data('percent') === true;
+                const value = parseFloat($option.data('value')) || 0;
+                const minOrder = parseFloat($option.data('min')) || 0;
+                const totalBefore = originalGrandTotal + shippingCost;
+
+                if (totalBefore < minOrder) {
+                    Swal.fire("Lỗi", "Đơn hàng không đủ điều kiện áp dụng mã này.", "warning");
+                    return;
+                }
+
+                currentDiscount = isPercentage ? Math.round(totalBefore * value / 100) : value;
+                appliedCouponId = couponId;
+                updateTotalUI();
+            }
+
+            // === KHI CHỌN MÃ ===
+            $couponSelect.change(function () {
+                const couponId = parseInt($(this).val());
+                const $selected = $(this).find(':selected');
+
+                // Reset nếu chọn rỗng
+                if (!couponId) {
+                    currentDiscount = 0;
+                    appliedCouponId = 0;
+                    updateTotalUI();
+                    return;
+                }
+
+                const isPercentage = $selected.data('percent') === true;
+                const discountValue = parseFloat($selected.data('value')) || 0;
+                const minOrder = parseFloat($selected.data('min')) || 0;
+                const totalBefore = originalGrandTotal + shippingCost;
+
+                if (totalBefore < minOrder) {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Chưa đủ điều kiện",
+                        text: `Cần đơn tối thiểu ${minOrder.toLocaleString('vi-VN')} VNĐ`,
+                    });
+                    $(this).val('');
+                    return;
+                }
+
+                currentDiscount = isPercentage ? Math.round(totalBefore * discountValue / 100) : discountValue;
+                appliedCouponId = couponId;
+                updateTotalUI();
+
+                // Gửi server lưu Session
+                $.post("@Url.Action("GetCoupon", "Checkout")", { coupon_id: couponId })
+                    .done(res => {
+                        if (!res.success) {
+                            Swal.fire("Lỗi", res.message, "error");
+                            $couponSelect.val('');
+                            currentDiscount = 0;
+                            appliedCouponId = 0;
+                            updateTotalUI();
+                        } else {
+                            // LẤY MÃ COUPON TỪ OPTION ĐÃ CHỌN
+                            const selectedText = $couponSelect.find(':selected').text();
+                            const couponCode = selectedText.split(' - ')[0].trim(); // VD: "SUMMER2025"
+
+                            // ĐIỀN VÀO HIDDEN INPUT
+                            $('#hiddenCouponCode').val(couponCode);
+                            $('#hiddenDiscount').val(currentDiscount);
+
+                            // DEBUG: In ra console để kiểm tra
+                            console.log("ĐÃ ÁP DỤNG MÃ: " + couponCode);
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công!',
+                                text: 'Mã giảm giá đã được áp dụng.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+
+                            // Cập nhật UI
+                            updateTotalUI();
+                        }
+                    })
+                    .fail(() => {
+                        Swal.fire("Lỗi", "Không kết nối được server.", "error");
+                        $couponSelect.val('');
+                        currentDiscount = 0;
+                        appliedCouponId = 0;
+                        updateTotalUI();
+                    });
+            });
+
+            // === NÚT ÁP DỤNG ===
+            $('#applyCoupon').click(function () {
+                $couponSelect.trigger('change');
+            });
+
+            // === TẢI ĐỊA CHỈ + PHÍ SHIP ===
+            function updateAddress() {
+                $("#tinhId").val($("#tinh").val());
+                $("#tinhName").val($("#tinh option:selected").text());
+                $("#quanId").val($("#quan").val());
+                $("#quanName").val($("#quan option:selected").text());
+                $("#phuongId").val($("#phuong").val());
+                $("#phuongName").val($("#phuong option:selected").text());
+            }
+            // Load Tỉnh
+            $.getJSON('https://provinces.open-api.vn/api/?depth=1', function (data_tinh) {
+                if (data_tinh && data_tinh.length > 0) {
+                    $.each(data_tinh, function (key_tinh, val_tinh) {
+                        $("#tinh").append('<option value="' + val_tinh.code + '">' + val_tinh.name + '</option>');
+                    });
+                }
+
+                // Nếu có địa chỉ mặc định thì set luôn giá trị sau khi load tỉnh
+                if (defaultTinhId) {
+                    $("#tinh").val(defaultTinhId).trigger('change');
+                    if (defaultHouseNumber) {
+                        $("#houseNumber").val(defaultHouseNumber);
+                    }
+                }
+            });
+
+            $("#tinh").change(function (e) {
+                var idtinh = $(this).val();
+                $("#quan").html('<option value="">Chọn Quận / Huyện</option>');
+                $("#phuong").html('<option value="">Chọn Phường / Xã</option>');
+                updateAddress();
+                
+                if (!idtinh) return;
+
+                // Load Quận/Huyện
+                $.getJSON('https://provinces.open-api.vn/api/p/' + idtinh + '?depth=2', function (data_quan) {
+                    if (data_quan && data_quan.districts) {
+                        $.each(data_quan.districts, function (key_quan, val_quan) {
+                            $("#quan").append('<option value="' + val_quan.code + '">' + val_quan.name + '</option>');
+                        });
+                    }
+
+                    // Nếu có quận mặc định tương ứng với tỉnh đã chọn thì set luôn
+                    if (defaultTinhId && idtinh === defaultTinhId && defaultQuanId) {
+                        $("#quan").val(defaultQuanId).trigger('change');
+                    }
+                });
+            });
+
+            $("#quan").change(function (e) {
+                var idquan = $(this).val();
+                $("#phuong").html('<option value="">Chọn Phường / Xã</option>');
+                updateAddress();
+                
+                if (!idquan) return;
+
+                // Load Phường/Xã
+                $.getJSON('https://provinces.open-api.vn/api/d/' + idquan + '?depth=2', function (data_phuong) {
+                    if (data_phuong && data_phuong.wards) {
+                        $.each(data_phuong.wards, function (key_phuong, val_phuong) {
+                            $("#phuong").append('<option value="' + val_phuong.code + '">' + val_phuong.name + '</option>');
+                        });
+                    }
+
+                    // Nếu có phường mặc định tương ứng với quận đã chọn thì set luôn
+                    if (defaultQuanId && idquan === defaultQuanId && defaultPhuongId) {
+                        $("#phuong").val(defaultPhuongId);
+                        updateAddress();
+                    }
+                });
+            });
+
+            $("#phuong").change(updateAddress);
+
+            // === TÍNH PHÍ SHIP ===
+            $(".btn-add-shipping").click(function () {
+                const tinh = $("#tinh option:selected").text();
+                const quan = $("#quan option:selected").text();
+                const phuong = $("#phuong option:selected").text();
+
+                if (!tinh || tinh.includes("Chọn") || !quan || quan.includes("Chọn") || !phuong || phuong.includes("Chọn")) {
+                    Swal.fire("Lỗi", "Vui lòng chọn đầy đủ địa chỉ!", "warning");
+                    return;
+                }
+
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("GetShipping", "Cart")",
+                    data: { tinh: tinh, quan: quan, phuong: phuong },
+                    success: function (res) {
+                        if (res.success) {
+                            $shippingDisplay.text(res.price.toLocaleString('vi-VN') + ' VNĐ');
+                            $shippingCostInput.val(res.price);
+                            shippingCost = res.price;
+                            updateTotalUI(); // Cập nhật lại tổng khi có ship
+                            Swal.fire("Thành công!", `Phí ship: ${res.price.toLocaleString('vi-VN')} VNĐ`, "success");
+                        } else {
+                            Swal.fire("Lỗi", res.message, "error");
+                        }
+                    },
+                    error: function () {
+                        Swal.fire("Lỗi", "Không thể tính phí vận chuyển.", "error");
+                    }
+                });
+            });
+
+            // === DANH SÁCH NGÂN HÀNG VÀ THÔNG TIN QR ===
+            const banks = {
+                tpbank: {
+                    name: "TPBank",
+                    logo: "/images/tpbank.jpg",
+                    accountFormatted: "1696 7246 328",
+                    qr: "https://img.vietqr.io/image/tpbank-16967246328-compact.png?accountName=LE%20VAN%20TRI"
+                },
+                mbbank: {
+                    name: "MBBank",
+                    logo: "/images/mbbank.jpg",
+                    account: "0358967246",
+                    accountFormatted: "0358 967 246",
+                    qr: "https://img.vietqr.io/image/mbbank-0358967246-compact.png?accountName=LE%20VAN%20TRI"
+                }
+                // Thêm ngân hàng mới ở đây rất dễ
+            };
+
+            const $paymentButtons = $('.payment-option-btn');
+            const $qrPreview = $('#qrPreview');
+            const $qrContainer = $('#qrContainer');
+            const $selectedBankInput = $('#selectedBank');
+            const $template = $('#qrTemplate')[0];
+
+            function showQr(bankKey) {
+                if (!bankKey || !banks[bankKey]) {
+                    $qrPreview.addClass('d-none');
+                    $selectedBankInput.val('');
+                    return;
+                }
+
+                const bank = banks[bankKey];
+                $selectedBankInput.val(bankKey);
+
+                // Clone template
+                const clone = $template.content.cloneNode(true);
+                clone.querySelector('.bank-name').textContent = bank.name;
+                clone.querySelector('.account-number').textContent = bank.accountFormatted;
+                clone.querySelector('.copy-btn').dataset.copyAccount = bank.account;
+                clone.querySelector('.bank-logo').src = bank.logo;
+                clone.querySelector('.qr-image').src = bank.qr;
+
+                // Xóa nội dung cũ và thêm mới
+                $qrContainer.empty().append(clone);
+                $qrPreview.removeClass('d-none');
+            }
+
+            // Click chọn phương thức thanh toán
+            $('.payment-option-btn').click(function () {
+                $('.payment-option-btn').removeClass('active');
+                $(this).addClass('active');
+
+                const method = $(this).data('method');
+                $('#paymentMethod').val(method);
+
+                if (method === 'Momo') {
+                    $('#qrPreview').addClass('d-none');
+                    // Không cần show QR
+                } else {
+                    // Mặc định show QR chuyển khoản (TPBank/MBBank logic cũ hoặc mặc định)
+                    // Ở đây đơn giản hóa: nếu chọn COD/Transfer thì hiện QR mặc định là TPBank
+                     showQr('tpbank'); 
+                }
+            });
+
+            // Copy số tài khoản
+            $(document).on('click', '.copy-btn', function () {
+                const account = $(this).data('copyAccount');
+                if(!account) return;
+                
+                navigator.clipboard.writeText(account).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã sao chép!',
+                        text: `Số tài khoản ${account} đã được copy vào clipboard`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }).catch(() => {
+                    Swal.fire('Lỗi', 'Không thể sao chép, vui lòng copy thủ công', 'error');
+                });
+            });
+
+            // Khởi động: nếu muốn mặc định chọn 1 ngân hàng thì gọi showQr('tpbank') hoặc tương tự
+            // Ví dụ: showQr('tpbank'); // bỏ comment nếu muốn TPBank hiển thị đầu tiên
+
+            // === KHỞI ĐỘNG ===
+            loadCoupons();
+            updateTotalUI();
+        });
+    </script>
+    <!-- Template QR - ẩn đi, JS sẽ clone và hiển thị -->
+<template id="qrTemplate">
+    <div class="qr-card border rounded p-4 bg-light shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                    <img class="bank-logo ms-3" width="80" alt="Logo ngân hàng">
+                <div class="bank-name fw-bold text-primary fs-5"></div>
+                <div class="account-name text-muted small text-uppercase">LE VAN TRI</div>
+                <div class="account-row mt-2">
+                    <span class="text-secondary">Số tài khoản:</span>
+                    <strong class="account-number ms-2"></strong>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary mt-2 copy-btn">
+                    Sao chép 
+                </button>
+            </div>
+        </div>
+        <img class="qr-image img-fluid rounded border" alt="QR Code thanh toán">
+    </div>
+</template>
+}

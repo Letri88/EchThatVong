@@ -1,0 +1,52 @@
+﻿@model IEnumerable<AboutModel>
+@{
+    ViewData["title"] = "Danh sách liên hệ";
+    Paginate pager = new Paginate();
+    int pageNo = 0;
+    if (ViewBag.Pager != null)
+    {
+        pager = ViewBag.Pager;
+        pageNo = pager.CurrentPage;
+    }
+}
+<h3>Danh sách liên hệ</h3>
+<a class="btn btn-primary" asp-area="Admin" asp-action="Create" asp-controller="Product">Thêm danh sách liên hệ</a>
+
+<table class="table" id="myTable">
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Map</th>
+            <th scope="col">Logo</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Email</th>
+            <th scope="col">Hành động</th>
+
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td>@Html.Raw(@item.Description)</td>
+                <td>@Html.Raw(@item.Map)</td>
+                <td> <img src="~/media/logo/@item.LogoImage" width="120px" height="150px" /> </td>
+                <td>@item.Phone</td>
+                <td>@item.Email</td>
+                <td>
+                    <a asp-area="Admin" asp-action="Edit" class="btn btn-warning btn-sm" asp-controller="About" >Sửa</a>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+</table>
+<partial name="_paging" model="@pager" />
+@section Scripts {
+    <script>
+        let table = new DataTable('#myTable');
+    </script>
+}

@@ -1,0 +1,148 @@
+﻿@model IEnumerable<ProductModel>
+@{
+    ViewData["Title"] = "Ếch thắt vòng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<partial name="_SliderPartial" />
+<div class="col-sm-3">
+    @Html.Partial("_SidebarPartial")
+</div>
+<style>
+    .product-image-wrapper {
+        height: 450px;
+    }</style>
+<div class="col-sm-9 padding-right">
+    <div class="features_items">
+        <h2 class="title text-center">Sản phẩm nổi bật</h2>
+
+        <div class="row">
+            @foreach (var item in Model)
+            {
+                <div class="col-sm-4 mb-4">
+                    <div class="product-image-wrapper">
+                        <div class="single-products text-center">
+                            <a asp-action="Details" asp-controller="Product" asp-route-Id="@item.Id">
+                                <div class="productinfo text-center">
+                                    <img src="~/media/products/@item.Image" alt="@item.Name" width="100px" height="200px" />
+                                    <h2>@item.Price.ToString("#,#00 VNĐ")</h2>
+                                    <p>@item.Name</p>
+                                    <p>Danh mục: @item.Category.Name</p>
+                                    <p>Thương hiệu: @item.Brand.Name</p>
+                                </div>
+                            </a>
+                            @if (User.Identity?.IsAuthenticated ?? false)
+                            {
+                                @if (item.Quantity > 0)
+                                {
+                                    <button class="btn btn-default add-to-cart " data-product_id="@item.Id"><i class="fa fa-shopping-cart"></i>Thêm giỏ hàng</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn-out-stock"><i class="fa fa-shopping-cart"></i>Hết hàng</button>
+                                }
+                            }
+                            <style>
+                                .btn-out-stock {
+                                    background: #ccc;
+                                    color: #555;
+                                    border: none;
+                                    border-radius: 30px;
+                                    padding: 10px 20px;
+                                    font-weight: 600;
+                                    font-size: 15px;
+                                    cursor: not-allowed;
+                                    opacity: 0.8;
+                                }
+
+                                    .btn-add-cart i, .btn-out-stock i {
+                                        margin-right: 8px;
+                                    }
+                            </style>
+                        </div>
+                        <div class="choose text-center mt-3">
+                            @if (User.Identity?.IsAuthenticated ?? false)
+                            {
+                                <ul class="nav nav-pills nav-justified">
+                                    <li>
+                                        <button class="btn btn-outline-danger add-btn-wishlist" data-product_id="@item.Id">
+                                            <i class="fa fa-heart"></i> Thêm vào yêu thích
+                                        </button>
+                                    </li>
+                                </ul>
+                            }
+                        </div>
+
+                        <style>
+                            .add-btn-wishlist {
+                                transition: all 0.3s ease;
+                                font-weight: 500;
+                                border-radius: 30px;
+                                padding: 8px 20px;
+                            }
+
+                                .add-btn-wishlist:hover {
+                                    background-color: #dc3545;
+                                    color: white;
+                                    transform: scale(1.05);
+                                    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.4);
+                                }
+
+                                .add-btn-wishlist i {
+                                    margin-right: 6px;
+                                }
+                        </style>
+
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<!--Thêm giỏ hàng-->
+@section Scripts {
+	<script>
+		
+			$('.add-to-cart').click(function () {
+    var Id = $(this).data("product_id");
+
+    $.ajax({
+        type: "POST",
+        url: "@Url.Action("Add","Cart")",
+        data: { Id: Id },
+        success: function (result) {
+            if (result.success) {
+                Swal.fire(result.message);
+            }
+        },
+        error: function() {
+            Swal.fire("Lỗi khi thêm sản phẩm!");
+        }
+    });
+});
+
+		
+	</script>
+    <!--Thêm yêu thích-->
+    <script>
+
+        $('.add-btn-wishlist').click(function () {
+            var Id = $(this).data("product_id");
+
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("AddWishlist", "Home")",
+                data: { Id: Id },
+                success: function (result) {
+                    if (result.success) {
+                        Swal.fire(result.message);
+                    }
+                },
+                error: function () {
+                    Swal.fire("Lỗi khi thêm sản phẩm!");
+                }
+            });
+        });
+
+
+    </script>
+}

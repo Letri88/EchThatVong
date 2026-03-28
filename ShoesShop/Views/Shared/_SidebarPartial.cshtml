@@ -1,0 +1,135 @@
+<!-- Container chính của Sidebar (Chỉ hiện trên Desktop) -->
+<div class="left-sidebar desktop-sidebar">
+	
+	<!-- Section Danh mục -->
+	<div class="sidebar-section">
+		<h2>Danh mục</h2>
+		<div class="panel-group category-products" id="category-accordian">
+			<vc:categories></vc:categories>
+		</div>
+	</div>
+	
+	<!-- Section Thương hiệu -->
+	<div class="sidebar-section">
+		<h2>Thương hiệu</h2>
+		<div class="panel-group category-products" id="brand-accordian">
+			<vc:brands></vc:brands>
+		</div>
+	</div>
+</div>
+
+<!-- ========================================== -->
+<!-- CSS TRỰC TIẾP CHO SIDEBAR BÊN TRÁI -->
+<!-- ========================================== -->
+<style>
+	/* Các biến màu sắc chuẩn để dễ bảo trì */
+	:root {
+		--sidebar-bg: #ffffff;
+		--sidebar-border: #f0f0f0;
+		--sidebar-text: #555555;
+		--sidebar-heading-text: #FE980F; /* Màu vàng cam chủ đạo của theme */
+		--sidebar-hover-bg: #fffcf8;
+		--sidebar-hover-text: #FE980F;
+		--sidebar-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+	}
+
+	/* CSS chung Sidebar Desktop */
+	.left-sidebar.desktop-sidebar {
+		background: var(--sidebar-bg);
+		border: 1px solid var(--sidebar-border);
+		border-radius: 8px;
+		padding: 0;
+		overflow: hidden;
+		box-shadow: var(--sidebar-shadow);
+		display: flex;
+		flex-direction: column;
+		gap: 0px;
+	}
+
+	.sidebar-section {
+		margin-bottom: 20px;
+		padding: 0 15px;
+	}
+
+	.sidebar-section:last-child {
+		margin-bottom: 30px;
+	}
+
+	/* Trang trí Tiêu đề Section (H2) */
+	.left-sidebar h2 {
+		color: var(--sidebar-heading-text);
+		font-family: 'Roboto', sans-serif;
+		font-size: 18px;
+		font-weight: 600;
+		text-transform: uppercase;
+		margin: 25px 0 15px;
+		position: relative;
+		text-align: center;
+		padding-bottom: 10px;
+	}
+
+	.left-sidebar h2::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 40px;
+		height: 2px;
+		background-color: var(--sidebar-heading-text);
+		border-radius: 2px;
+	}
+
+	/* Định dạng lại Panel của Bootstrap cho gọn gàng */
+	.left-sidebar .panel {
+		border: none;
+		box-shadow: none;
+		background: transparent;
+		margin-top: 5px;
+		border-radius: 0;
+	}
+
+	.left-sidebar .panel-heading {
+		background: transparent;
+		border-radius: 6px;
+		padding: 10px 15px;
+		transition: all 0.25s ease;
+		border: 1px solid transparent;
+		margin-bottom: 2px;
+	}
+
+	/* Hiệu ứng Hover mượt mà */
+	.left-sidebar .panel-heading:hover {
+		background-color: var(--sidebar-hover-bg);
+		transform: translateX(5px);
+	}
+
+	.left-sidebar .panel-title a {
+		color: var(--sidebar-text);
+		font-family: 'Roboto', sans-serif;
+		font-size: 14.5px;
+		text-decoration: none;
+		display: block;
+		width: 100%;
+		font-weight: 500;
+		transition: color 0.25s ease;
+	}
+
+	.left-sidebar .panel-heading:hover .panel-title a {
+		color: var(--sidebar-hover-text);
+	}
+
+	/* Tablet: 768px -> 991px */
+	@@media (max-width: 991px) {
+		.left-sidebar h2 { font-size: 16px; }
+		.left-sidebar .panel-title a { font-size: 13.5px; }
+		.sidebar-section { padding: 0 10px; }
+	}
+
+	/* Mobile: < 768px (Ẩn hoàn toàn vì sẽ đưa vào Hamburger Menu) */
+	@@media (max-width: 767px) {
+		.left-sidebar.desktop-sidebar {
+			display: none !important;
+		}
+	}
+</style>

@@ -1,0 +1,42 @@
+@model ShoesShop.Models.OrderModel
+@{
+    ViewData["Title"] = "Trạng thái đơn hàng";
+
+    string OrderStatusText(int status) => status switch
+    {
+        0 => "Đã đặt",
+        1 => "Đang chuẩn bị",
+        2 => "Đang giao",
+        3 => "Hoàn thành",
+        4 => "Đã hủy",
+        _ => "Không xác định"
+    };
+
+    string PaymentStatusText(int status) => status switch
+    {
+        0 => "Chờ thanh toán",
+        1 => "Đã thanh toán",
+        2 => "Thanh toán thất bại",
+        _ => "Không xác định"
+    };
+}
+
+<h3>Trạng thái đơn hàng @Model.Orders_Code</h3>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <p><strong>Email:</strong> @Model.UserName</p>
+        <p><strong>Ngày tạo:</strong> @Model.CreatedDate</p>
+        <p><strong>Địa chỉ giao hàng:</strong> @Model.HouseNumber, @Model.WardName, @Model.DistrictName, @Model.CityName</p>
+        <p><strong>Trạng thái đơn hàng:</strong> @OrderStatusText(Model.Status)</p>
+        <p><strong>Thanh toán:</strong> @PaymentStatusText(Model.PaymentStatus)
+            @if (!string.IsNullOrEmpty(Model.PaymentMethod))
+            {
+                <span class="text-muted">(@Model.PaymentMethod)</span>
+            }
+        </p>
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-link mt-3">Theo dõi đơn hàng khác</a>
+
