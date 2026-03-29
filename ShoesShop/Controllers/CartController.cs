@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoesShop.Models;
 using ShoesShop.Models.ViewModels;
@@ -36,14 +36,14 @@ namespace ShoesShop.Controllers
 		}
 
         [HttpPost]
-        public async Task<IActionResult> Add(int Id)
+        public async Task<IActionResult> Add(int Id, string size)
         {
             ProductModel product = await _dataContext.Products.FindAsync(Id);
             List<CartItemModel> cart = HttpContext.Session.GetJSon<List<CartItemModel>>("Cart") ?? new List<CartItemModel>();
-            CartItemModel cartItems = cart.FirstOrDefault(c => c.ProductId == Id);
+            CartItemModel cartItems = cart.FirstOrDefault(c => c.ProductId == Id && c.Size == size);
 
             if (cartItems == null)
-                cart.Add(new CartItemModel(product));
+                cart.Add(new CartItemModel(product, size));
             else
                 cartItems.Quantity += 1;
 
@@ -52,17 +52,17 @@ namespace ShoesShop.Controllers
             return Json(new { success = true, message = "Thêm sản phẩm thành công" });
         }
 
-        public async Task<IActionResult> Decrease(int Id)
+        public async Task<IActionResult> Decrease(int Id, string size)
         {
             List<CartItemModel> cart = HttpContext.Session.GetJSon<List<CartItemModel>>("Cart");
-            CartItemModel cartItem = cart.Where(c => c.ProductId == Id).FirstOrDefault();
+            CartItemModel cartItem = cart.Where(c => c.ProductId == Id && c.Size == size).FirstOrDefault();
             if (cartItem.Quantity > 1)
             {
                 --cartItem.Quantity;
             }
             else
             {
-                cart.RemoveAll(p => p.ProductId == Id);
+                cart.RemoveAll(p => p.ProductId == Id && p.Size == size);
             }
             if (cart.Count == 0)
             {
@@ -75,11 +75,11 @@ namespace ShoesShop.Controllers
             TempData["success"] = "Giảm sản phẩm thành công ";
             return RedirectToAction("Index");
         }
-        public async Task<IActionResult> Increase(int Id)
+        public async Task<IActionResult> Increase(int Id, string size)
         {
             ProductModel product = await _dataContext.Products.Where(p => p.Id == Id).FirstOrDefaultAsync();
             List<CartItemModel> cart = HttpContext.Session.GetJSon<List<CartItemModel>>("Cart");
-            CartItemModel cartItem = cart.Where(c => c.ProductId == Id).FirstOrDefault();
+            CartItemModel cartItem = cart.Where(c => c.ProductId == Id && c.Size == size).FirstOrDefault();
             if (cartItem.Quantity >= 1 && product.Quantity> cartItem.Quantity)
             {
                 ++cartItem.Quantity;
@@ -100,10 +100,10 @@ namespace ShoesShop.Controllers
             TempData["success"] = "Tăng sản phẩm thành công ";
             return RedirectToAction("Index");
         }
-        public async Task<IActionResult> Remove(int Id)
+        public async Task<IActionResult> Remove(int Id, string size)
         {
 			List<CartItemModel> cart = HttpContext.Session.GetJSon<List<CartItemModel>>("Cart");
-            cart.RemoveAll(p=>p.ProductId==Id);
+            cart.RemoveAll(p=>p.ProductId==Id && p.Size == size);
             if (cart.Count == 0)
             {
                 HttpContext.Session.Remove("Cart");

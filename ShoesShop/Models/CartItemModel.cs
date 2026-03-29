@@ -1,4 +1,4 @@
-﻿namespace ShoesShop.Models
+namespace ShoesShop.Models
 {
 	public class CartItemModel
 	{
@@ -10,16 +10,18 @@
 			get {  return Quantity*Price; }
 				}
 		public string Image {  get; set; }
+		public string Size { get; set; }
 		public CartItemModel() 
 		{
 		}
-		public CartItemModel(ProductModel product)
+		public CartItemModel(ProductModel product, string size)
 		{
 			ProductId = product.Id;
 			ProductName = product.Name;
 			Price = product.Price;
 			Quantity = 1;
 			Image = product.Image;
+			Size = size;
 		}
 	}
 }

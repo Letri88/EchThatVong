@@ -1,0 +1,76 @@
+@model IEnumerable<BotQuestionModel>
+@{
+    ViewData["Title"] = "Quản lý câu hỏi Chatbot";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="card">
+    <div class="card-header pb-0">
+        <h6>Quản lý kịch bản Chatbot (Quick Replies)</h6>
+        <a asp-action="Create" class="btn btn-primary btn-sm mt-3">Thêm câu hỏi mới</a>
+    </div>
+    <div class="card-body px-0 pt-0 pb-2">
+        <div class="table-responsive p-0">
+            <table class="table align-items-center mb-0">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Câu hỏi hiển thị (User Message)</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Câu trả lời bot (Bot Reply)</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Câu hỏi cha</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Hiển thị DM?</th>
+                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thứ tự</th>
+                        <th class="text-secondary opacity-7"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex px-2 py-1">
+                                    <div class="d-flex flex-column justify-content-center">
+                                        <h6 class="mb-0 text-sm">@item.UserMessage</h6>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-wrap" style="max-width: 250px;">
+                                <span class="text-xs font-weight-bold">@item.BotReply</span>
+                            </td>
+                            <td class="align-middle text-center text-sm">
+                                @if (item.ParentId != null)
+                                {
+                                    <span class="badge badge-sm bg-gradient-info">@item.ParentQuestion?.UserMessage</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-sm bg-gradient-success">Gốc (Root)</span>
+                                }
+                            </td>
+                            <td class="align-middle text-center">
+                                @if (item.ShowCategoryOptions)
+                                {
+                                    <span class="text-secondary text-xs font-weight-bold"><i class="fa fa-check text-success"></i> Có</span>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary text-xs font-weight-bold"><i class="fa fa-times text-danger"></i> Không</span>
+                                }
+                            </td>
+                            <td class="align-middle text-center">
+                                <span class="text-secondary text-xs font-weight-bold">@item.OrderIndex</span>
+                            </td>
+                            <td class="align-middle">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-secondary font-weight-bold text-xs">
+                                    Sửa
+                                </a> |
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="text-danger font-weight-bold text-xs" onclick="return confirm('Bạn có chắc muốn xóa câu hỏi này? (Sẽ không thể xóa nếu có câu hỏi con phụ thuộc)')">
+                                    Xóa
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

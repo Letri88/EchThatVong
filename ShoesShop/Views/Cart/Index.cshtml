@@ -1,4 +1,4 @@
-﻿@using ShoesShop.Models.ViewModels
+@using ShoesShop.Models.ViewModels
 @model CartItemViewModel
 @{
     ViewData["Title"] = "Giỏ hàng";
@@ -34,6 +34,7 @@
                                                 <img src="~/media/products/@item.Image" alt="@item.ProductName" />
                                                 <div>
                                                     <h5>@item.ProductName</h5>
+                                                    <p style="margin:0; color:#888;">Size: @item.Size</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -44,9 +45,9 @@
 
                                         <td class="text-center">
                                             <div class="quantity-control">
-                                                <a asp-action="Decrease" asp-controller="Cart" asp-route-id="@item.ProductId">−</a>
+                                                <a asp-action="Decrease" asp-controller="Cart" asp-route-id="@item.ProductId" asp-route-size="@item.Size">−</a>
                                                 <span>@item.Quantity</span>
-                                                <a asp-action="Increase" asp-controller="Cart" asp-route-id="@item.ProductId">+</a>
+                                                <a asp-action="Increase" asp-controller="Cart" asp-route-id="@item.ProductId" asp-route-size="@item.Size">+</a>
                                             </div>
                                         </td>
 
@@ -58,7 +59,8 @@
                                             <a class="remove-btn"
                                                asp-action="Remove"
                                                asp-controller="Cart"
-                                               asp-route-id="@item.ProductId">
+                                               asp-route-id="@item.ProductId"
+                                               asp-route-size="@item.Size">
                                                 ✖
                                             </a>
                                         </td>

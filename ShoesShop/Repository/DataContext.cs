@@ -25,5 +25,6 @@ namespace ShoesShop.Repository
         public DbSet<AddressModel> Addresses { get; set; }
         public DbSet<ChatMessageModel> ChatMessages { get; set; }
         public DbSet<BotChatMessageModel> BotChatMessages { get; set; }
+        public DbSet<BotQuestionModel> BotQuestions { get; set; }
     }
 }

@@ -59,7 +59,16 @@
                             {
 						@if (Model.ProductDetails.Quantity > 0)
 						{
-								<button class="btn btn-default add-to-cart " data-product_id="@Model.ProductDetails.Id"><i class="fa fa-shopping-cart"></i>Thêm giỏ hàng</button>
+                            <div style="margin-bottom: 20px; display: inline-block; margin-right: 15px;">
+                                <label style="font-weight: normal; margin-right: 5px;">Chọn Size: </label>
+                                <select id="product_size" class="form-control" style="width: auto; display: inline-block; vertical-align: middle;">
+                                    <option value="S">S (15-16cm)</option>
+                                    <option value="M">M (17-18cm)</option>
+                                    <option value="L">L (19-20cm)</option>
+                                    <option value="XL">XL (>21cm)</option>
+                                </select>
+                            </div>
+							<button class="btn btn-default add-to-cart " data-product_id="@Model.ProductDetails.Id"><i class="fa fa-shopping-cart"></i>Thêm giỏ hàng</button>
 						}
 						else
 						{
@@ -297,11 +306,12 @@
 		
 			$('.add-to-cart').click(function () {
     var Id = $(this).data("product_id");
+    var size = $('#product_size').val() || "Không chọn";
 
     $.ajax({
         type: "POST",
         url: "@Url.Action("Add","Cart")",
-        data: { Id: Id },
+        data: { Id: Id, size: size },
         success: function (result) {
             if (result.success) {
                 Swal.fire(result.message);

@@ -333,7 +333,8 @@ namespace ShoesShop.Controllers
                         ProductId = (int)item.ProductId,
                         Quantity = item.Quantity,
                         Price = item.Price,
-                        UserName = userEmail
+                        UserName = userEmail,
+                        Size = item.Size
                     };
                     _dataContext.OrderDetails.Add(details);
 

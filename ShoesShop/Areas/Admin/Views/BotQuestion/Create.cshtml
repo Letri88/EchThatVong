@@ -1,0 +1,60 @@
+@model BotQuestionModel
+@{
+    ViewData["Title"] = "Thêm kịch bản Chatbot";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header pb-0">
+                <h6 class="mb-0">Thêm câu hỏi hiển thị Chatbot</h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    
+                    <div class="form-group">
+                        <label asp-for="UserMessage" class="control-label text-sm font-weight-bold"></label>
+                        <input asp-for="UserMessage" class="form-control form-control-sm" placeholder="Ví dụ: Xin chào, Tôi cần hỗ trợ" />
+                        <span asp-validation-for="UserMessage" class="text-danger text-xs"></span>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <label asp-for="BotReply" class="control-label text-sm font-weight-bold"></label>
+                        <textarea asp-for="BotReply" class="form-control form-control-sm" rows="3" placeholder="Ví dụ: Chào bạn, bạn cần xem danh mục nào?"></textarea>
+                        <span asp-validation-for="BotReply" class="text-danger text-xs"></span>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <label asp-for="ParentId" class="control-label text-sm font-weight-bold"></label>
+                        <select asp-for="ParentId" class="form-control form-control-sm" asp-items="ViewBag.ParentList">
+                            <option value="">-- [ Không có ] Là câu hỏi mở đầu --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <div class="form-check form-switch ps-0">
+                            <input class="form-check-input ms-auto" type="checkbox" asp-for="ShowCategoryOptions">
+                            <label class="form-check-label text-body ms-3 text-truncate w-80 mb-0 font-weight-bold" asp-for="ShowCategoryOptions"></label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <label asp-for="OrderIndex" class="control-label text-sm font-weight-bold"></label>
+                        <input asp-for="OrderIndex" class="form-control form-control-sm" type="number" />
+                    </div>
+
+                    <div class="form-group mt-4 text-center">
+                        <input type="submit" value="Tạo mới" class="btn btn-primary" />
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -186,6 +186,7 @@
 		</div>
 		<div id="ai-chat-body">
 			<div id="ai-chat-messages"></div>
+			<div id="ai-quick-replies" style="padding: 10px; display: none; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 0px; background: #f9f9f9; border-top: 1px solid #eee;"></div>
 			<div id="ai-chat-form">
 				<div class="ai-bot-fields">
 					<input type="text" id="ai-fullname" placeholder="Tên của bạn (không bắt buộc)" />
@@ -392,8 +393,111 @@
 				$.get('@Url.Action("GetBotConversation", "Chat")', function (res) {
 					if (res && res.success && Array.isArray(res.messages)) {
 						res.messages.forEach(function (m) {
-							addMessage(m.message || '', m.role === 'bot' ? 'bot' : 'user', null);
+							// If message contains html (like product images), we append html, else text
+							if(m.message.indexOf('<') !== -1) {
+								const cssClass = m.role === 'user' ? 'msg-user' : 'msg-bot';
+								const $msg = $('<div/>').addClass('ai-msg').addClass(cssClass);
+								$msg.append($('<div/>').html(m.message));
+								$messages.append($msg);
+							} else {
+								addMessage(m.message || '', m.role === 'bot' ? 'bot' : 'user', null);
+							}
 						});
+						$messages.scrollTop($messages[0].scrollHeight);
+					}
+				});
+				// Tải danh sách câu hỏi theo mặc định (root)
+				loadQuickReplies(null);
+			}
+
+			function loadQuickReplies(parentId) {
+				const $quickReplies = $('#ai-quick-replies');
+				$quickReplies.empty().hide();
+				
+				let url = '@Url.Action("GetBotQuestions", "Chat")';
+				if(parentId) url += '?parentId=' + parentId;
+
+				$.get(url, function(res) {
+					if (res && res.success && res.questions && res.questions.length > 0) {
+						renderQuickReplies(res.questions, null);
+					}
+				});
+			}
+
+			function renderQuickReplies(questions, categories) {
+				const $quickReplies = $('#ai-quick-replies');
+				$quickReplies.empty();
+				let hasItem = false;
+
+				if (questions && questions.length > 0) {
+					questions.forEach(q => {
+						const $btn = $('<button type="button" class="btn btn-sm btn-outline-warning" style="border-radius:20px; font-size:12px; padding:3px 10px;"/>')
+							.text(q.userMessage)
+							.on('click', function() {
+								handleQuestionClick(q.id, q.userMessage);
+							});
+						$quickReplies.append($btn);
+						hasItem = true;
+					});
+				}
+
+				if (categories && categories.length > 0) {
+					categories.forEach(c => {
+						const $btn = $('<button type="button" class="btn btn-sm btn-outline-info" style="border-radius:20px; font-size:12px; padding:3px 10px;"/>')
+							.text(c.name)
+							.on('click', function() {
+								handleCategoryClick(c.id, c.name);
+							});
+						$quickReplies.append($btn);
+						hasItem = true;
+					});
+				}
+
+				if(hasItem) {
+					$quickReplies.css('display', 'flex');
+				} else {
+					$quickReplies.hide();
+					loadQuickReplies(null); // Return to root if dead end
+				}
+			}
+
+			function handleQuestionClick(id, text) {
+				$('#ai-quick-replies').empty().hide();
+				addMessage(text, 'user', null);
+				
+				$.ajax({
+					url: '@Url.Action("ProcessBotQuestion", "Chat")',
+					method: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(id),
+					success: function (res) {
+						if (res && res.success) {
+							addMessage(res.message, 'bot', null);
+							renderQuickReplies(res.nextQuestions, res.categories);
+						}
+					}
+				});
+			}
+
+			function handleCategoryClick(id, text) {
+				$('#ai-quick-replies').empty().hide();
+				addMessage('Xem danh mục: ' + text, 'user', null);
+				
+				$.ajax({
+					url: '@Url.Action("ProcessCategoryOption", "Chat")',
+					method: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(id),
+					success: function (res) {
+						if (res && res.success) {
+							const $msg = $('<div/>').addClass('ai-msg').addClass('msg-bot');
+							$msg.append($('<div/>').html(res.message));
+							$messages.append($msg);
+							$messages.scrollTop($messages[0].scrollHeight);
+							
+							// Sau khi show SP thì quay lại root question
+							loadQuickReplies(null);
+						}
 					}
 				});
 			}
@@ -805,7 +909,7 @@
 		position: fixed;
 		right: 18px;
 		bottom: 80px;
-		width: 320px;
+		width: 400px;
 		max-width: 92vw;
 		background: #ffffff;
 		border-radius: 14px;
@@ -918,7 +1022,7 @@
 	#ai-chat-body {
 		display: flex;
 		flex-direction: column;
-		max-height: 380px;
+		max-height: 500px;
 	}
 
 	#ai-chat-body.ai-chat-collapsed {
@@ -1121,7 +1225,7 @@
 		#ai-chat-widget {
 			right: 8px;
 			bottom: 72px;
-			width: 290px;
+			width: 350px;
 		}
 
 		.ai-chat-image {
