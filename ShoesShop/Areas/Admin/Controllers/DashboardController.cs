@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShoesShop.Repository;
@@ -26,6 +26,20 @@ namespace ShoesShop.Areas.Admin.Controllers
             ViewBag.CountOrder = count_order;
             ViewBag.CountUser = count_user;
             ViewBag.CountCategory = count_category;
+
+            // Sản phẩm bán chạy nhất
+            ViewBag.TopProducts = _dataContext.Products.OrderByDescending(p => p.Sold).Take(5).ToList();
+
+            // Khách mua nhiều nhất (tính theo số đơn)
+            var topCustomers = _dataContext.Orders
+                .GroupBy(o => o.UserName)
+                .Select(g => new { UserName = g.Key, OrderCount = g.Count() })
+                .OrderByDescending(x => x.OrderCount)
+                .Take(5)
+                .AsEnumerable() // Chuyển sang xử lý Client-side sau khi đã lấy Top 5
+                .Select(x => new KeyValuePair<string, int>(x.UserName, x.OrderCount))
+                .ToList();
+            ViewBag.TopCustomers = topCustomers;
             return View();
         }
         [IgnoreAntiforgeryToken]
@@ -119,6 +133,27 @@ namespace ShoesShop.Areas.Admin.Controllers
                 })
                 .ToList();
             return Json(data);
+        }
+
+        [HttpPost]
+        public IActionResult GetDonutChartData()
+        {
+            try
+            {
+                var data = _dataContext.Products
+                    .Include(p => p.Category)
+                    .GroupBy(p => p.Category.Name)
+                    .Select(g => new {
+                        label = g.Key,
+                        value = g.Count()
+                    })
+                    .ToList();
+                return Json(data);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
         }
     }
 }

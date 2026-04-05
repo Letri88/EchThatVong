@@ -169,10 +169,12 @@
 	<script src="~/js/main.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.2/dist/sweetalert2.all.min.js"></script>
 
-	<!-- FLOATING AI CHAT BUTTON + PANEL -->
-	<button id="ai-chat-fab" type="button" aria-label="Mở chat tư vấn vòng">
-		<i class="fa fa-comments"></i>
-	</button>
+	@if (User.Identity != null && User.Identity.IsAuthenticated)
+	{
+		<!-- FLOATING AI CHAT BUTTON + PANEL -->
+		<button id="ai-chat-fab" type="button" aria-label="Mở chat tư vấn vòng">
+			<i class="fa fa-comments"></i>
+		</button>
 
 	<div id="ai-chat-widget" class="ai-chat-hidden">
 		<div id="ai-chat-header">
@@ -220,13 +222,20 @@
 			</div>
 		</div>
 	</div>
+	}
 
 	<script>
 		$(function () {
 			var message = '@TempData["success"]';
 			if (message != '')
 				Swal.fire(message);
+		});
+	</script>
 
+	@if (User.Identity != null && User.Identity.IsAuthenticated)
+	{
+		<script>
+		$(function () {
 			// AI Chat widget
 			const $fab = $('#ai-chat-fab');
 			const $widget = $('#ai-chat-widget');
@@ -597,7 +606,8 @@
 			// Load bot history lần đầu (mode mặc định là bot)
 			loadBotHistory();
 		});
-	</script>
+		</script>
+	}
 	@await RenderSectionAsync("Scripts", required: false)
 
 	<!-- ========================================== -->

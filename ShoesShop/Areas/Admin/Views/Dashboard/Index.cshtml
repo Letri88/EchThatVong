@@ -1,68 +1,273 @@
-﻿@model StatisticalModel
+@model StatisticalModel
 @{
     ViewData["title"] = "Dashboard";
 }
-<h3>Dashboard</h3>
+<h3 class="page-title" style="margin-bottom: 20px; font-weight: bold; color: #333;">Dashboard</h3>
+
+<style>
+    .stat-card {
+        border-radius: 8px;
+        padding: 20px;
+        color: #fff;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-card h3 {
+        margin: 10px 0 5px 0;
+        font-size: 32px;
+        font-weight: bold;
+        color: #fff;
+    }
+    .stat-card p {
+        margin: 0;
+        font-size: 16px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+    .stat-card i {
+        font-size: 40px;
+        margin-bottom: 5px;
+    }
+    .bg-primary-custom { background-color: #007bff; }
+    .bg-success-custom { background-color: #28a745; }
+    .bg-warning-custom { background-color: #fd7e14; }
+    .bg-danger-custom { background-color: #dc3545; }
+    
+    .filter-section {
+        background: #fdfdfd;
+        border: 1px solid #eef0f3;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .chart-section {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #eef0f3;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+    .form-group-filter {
+        margin-bottom: 15px;
+    }
+    .form-group-filter label {
+        font-weight: bold;
+        color: #555;
+    }
+</style>
+
 <div class="row">
-    <div class="col-md-3">
-        <p>Thống kê sản phẩm</p
-            <p>@ViewBag.CountProduct</p>
-    </div>
-    <div class="col-md-3">
-        <p>Thống kê bán hàng</p
-            <p>@ViewBag.CountOrder</p>
-    </div>
-    <div class="col-md-3">
-        <p>Thống kê người dùng</p
-            <p>@ViewBag.CountUser</p>
-    </div>
-    <div class="col-md-3">
-        <p>Thống kê danh mục</p
-            <p>@ViewBag.CountCategory</p>
-    </div>
-   <div class="container">
-    <div class="row">
-        <div class="col-md-3">
-            <select class="filter-select">
-                <option value="30">---Lọc dữ liệu---</option>
-                <option value="7">7 ngày trước</option>
-                <option value="30">tháng qua</option>
-                <option value="90">3 tháng trước</option>
-                <option value="365">1 năm</option>
-            </select>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-primary-custom">
+            <i class="fa fa-cubes"></i>
+            <h3>@ViewBag.CountProduct</h3>
+            <p>Sản phẩm</p>
         </div>
-         <div class="col-md-3">
-    <h4>Tùy chọn:</h4>
-    <label>Từ ngày</label>
-    <input type="date" class="form-control" id="date_from" asp-for="@Model.DateCreated" />
-
-    <label>Đến ngày</label>
-    <input type="date" class="form-control" id="date_to" asp-for="@Model.DateCreated" />
-
-    <button id="filterButton" class="btn btn-primary">Filter</button>
-</div>
     </div>
-   
-    <div class="row">
-        <h4>Biểu đồ thống kê</h4>
-        <div id="myfirstchart" style="height: 250px;"></div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-success-custom">
+            <i class="fa fa-shopping-cart"></i>
+            <h3>@ViewBag.CountOrder</h3>
+            <p>Đơn hàng</p>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-warning-custom">
+            <i class="fa fa-users"></i>
+            <h3>@ViewBag.CountUser</h3>
+            <p>Người dùng</p>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card bg-danger-custom">
+            <i class="fa fa-tags"></i>
+            <h3>@ViewBag.CountCategory</h3>
+            <p>Danh mục</p>
+        </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="filter-section">
+            <h4 style="margin-top: 0; margin-bottom: 15px; color: #333;"><i class="fa fa-filter"></i> Bộ lọc dữ liệu</h4>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group-filter">
+                        <label>Dạng biểu đồ</label>
+                        <select class="form-control" id="chartTypeSelect">
+                            <option value="line">Biểu đồ Đường (Line)</option>
+                            <option value="bar">Biểu đồ Cột (Bar)</option>
+                            <option value="donut">Biểu đồ Tròn (Donut)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group-filter">
+                        <label>Lọc nhanh</label>
+                        <select class="form-control filter-select">
+                            <option value="">--- Chọn thời gian ---</option>
+                            <option value="7">7 ngày qua</option>
+                            <option value="30">30 ngày qua</option>
+                            <option value="90">90 ngày qua</option>
+                            <option value="365">1 năm qua</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-group-filter">
+                        <label>Từ ngày - Đến ngày</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="date" class="form-control" id="date_from" asp-for="@Model.DateCreated" />
+                            <input type="date" class="form-control" id="date_to" asp-for="@Model.DateCreated" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-group-filter">
+                        <label>&nbsp;</label>
+                        <button id="filterButton" class="btn btn-primary form-control" style="font-weight: bold; background-color: #007bff; border-color: #007bff; padding: 6px 10px;">
+                            Lọc
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="chart-section">
+            <h4 style="margin-top: 0; margin-bottom: 20px; color: #333;"><i class="fa fa-bar-chart"></i> Biểu đồ thống kê</h4>
+            <div id="myfirstchart" style="height: 300px;"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="chart-section">
+            <h4 style="margin-top: 0; margin-bottom: 20px; color: #333;"><i class="fa fa-pie-chart"></i> Tỷ lệ sản phẩm theo chuyên mục</h4>
+            <div id="donut-chart" style="height: 300px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="chart-section" style="height: 100%;">
+            <h4 style="margin-top: 0; margin-bottom: 20px; color: #333;"><i class="fa fa-star"></i> Sản phẩm bán chạy nhất</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead style="background-color: #f8f9fa;">
+                        <tr>
+                            <th>Tên sản phẩm</th>
+                            <th>Giá</th>
+                            <th class="text-center">Đã bán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(ViewBag.TopProducts != null)
+                        {
+                            foreach(var item in ViewBag.TopProducts)
+                            {
+                                <tr>
+                                    <td>@item.Name</td>
+                                    <td>@item.Price.ToString("#,##0") VNĐ</td>
+                                    <td class="text-center"><span class="badge badge-success" style="background-color: #28a745;">@item.Sold</span></td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="chart-section" style="height: 100%;">
+            <h4 style="margin-top: 0; margin-bottom: 20px; color: #333;"><i class="fa fa-trophy"></i> Khách hàng mua nhiều nhất</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead style="background-color: #f8f9fa;">
+                        <tr>
+                            <th>Tên tài khoản</th>
+                            <th class="text-center">Số đơn hàng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(ViewBag.TopCustomers != null)
+                        {
+                            foreach(var item in ViewBag.TopCustomers)
+                            {
+                                <tr>
+                                    <td>@item.Key</td>
+                                    <td class="text-center"><span class="badge badge-primary" style="background-color: #007bff;">@item.Value</span></td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 @section Scripts {
     <script>
     $(document).ready(function () {
-        var ChartMorris = new Morris.Line({
-            element: 'myfirstchart',
-            data: [],
-            xkey: 'date',
-            ykeys: ['sold', 'quantity', 'revenue', 'profit'],
-            labels: ['Số lượng bán ra', 'Đơn hàng', 'Doanh thu', 'Lợi nhuận'],
-            lineColors: ['#f44336', '#2196F3', '#4CAF50', '#FF9800'],
-            pointFillColors: ['#f44336', '#2196F3', '#4CAF50', '#FF9800'],
-            pointStrokeColors: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
-            gridTextColor: '#5b5b5b',
-            gridLineColor: '#e6e6e6'
+        var currentData = [];
+        var activeChart = null;
+        var currentChartType = 'line';
+
+        function renderMainChart() {
+            $('#myfirstchart').empty(); // Destroy the old chart
+
+            if (currentData.length === 0) {
+                $('#myfirstchart').html('<div class="text-center text-muted" style="line-height:300px;">Không có dữ liệu trong khoảng thời gian này</div>');
+                return;
+            }
+
+            if (currentChartType === 'line' || currentChartType === 'bar') {
+                var options = {
+                    element: 'myfirstchart',
+                    data: currentData,
+                    xkey: 'date',
+                    ykeys: ['sold', 'quantity', 'revenue', 'profit'],
+                    labels: ['Số lượng bán ra', 'Đơn hàng', 'Doanh thu', 'Lợi nhuận'],
+                    lineColors: ['#f44336', '#2196F3', '#4CAF50', '#FF9800'],
+                    barColors: ['#f44336', '#2196F3', '#4CAF50', '#FF9800'],
+                    gridTextColor: '#5b5b5b',
+                    gridLineColor: '#e6e6e6',
+                    resize: true
+                };
+
+                if (currentChartType === 'line') {
+                    activeChart = new Morris.Line(options);
+                } else if (currentChartType === 'bar') {
+                    activeChart = new Morris.Bar(options);
+                }
+            } else if (currentChartType === 'donut') {
+                // Với biểu đồ tròn dùng để xem tỷ trọng doanh thu giữa các ngày
+                var donutData = currentData.map(function(item) {
+                    return { label: item.date, value: item.revenue || 0 };
+                });
+                
+                activeChart = new Morris.Donut({
+                    element: 'myfirstchart',
+                    data: donutData,
+                    formatter: function (y) { return y.toLocaleString() + ' đ'; },
+                    resize: true
+                });
+            }
+        }
+
+        $('#chartTypeSelect').on('change', function() {
+            currentChartType = $(this).val();
+            renderMainChart();
         });
 
         // Hàm chung để load dữ liệu
@@ -74,7 +279,7 @@
                 data: data,
                 success: function (result) {
                     if (result && result.length > 0) {
-                        ChartMorris.setData(result.map(function (item) {
+                        currentData = result.map(function (item) {
                             return {
                                 date: item.date,
                                 sold: item.sold || 0,
@@ -82,15 +287,17 @@
                                 revenue: item.revenue || 0,
                                 profit: item.profit || 0
                             };
-                        }));
+                        });
                     } else {
-                        ChartMorris.setData([]);
+                        currentData = [];
                         console.warn("Không có dữ liệu để hiển thị trên biểu đồ.");
                     }
+                    renderMainChart();
                 },
                 error: function (error) {
                     console.error("Lỗi khi lấy dữ liệu:", error);
-                    ChartMorris.setData([]);
+                    currentData = [];
+                    renderMainChart();
                 }
             });
         }
@@ -128,33 +335,37 @@
                 return;
             }
 
+            loadChartData("@Url.Action("FilterData", "Dashboard")", { fromDate: fromDate, toDate: toDate });
+        });
+
+        // ======================
+        // CẤU HÌNH BIỂU ĐỒ TRÒN
+        // ======================
+        var DonutChartMorris = new Morris.Donut({
+            element: 'donut-chart',
+            data: [{label: "Đang tải...", value: 1}],
+            colors: ['#f44336', '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#00BCD4', '#E91E63']
+        });
+
+        function loadDonutChartData() {
             $.ajax({
-                url: "@Url.Action("FilterData", "Dashboard")",
-                data: { fromDate: fromDate, toDate: toDate },
+                url: "@Url.Action("GetDonutChartData", "Dashboard")",
                 type: "POST",
-                success: function (data) {
-                    if (data && data.length > 0) {
-                        ChartMorris.setData(data.map(function (item) {
-                            return {
-                                date: item.date,
-                                sold: item.sold || 0,
-                                quantity: item.quantity || 0,
-                                revenue: item.revenue || 0,
-                                profit: item.profit || 0
-                            };
-                        }));
+                dataType: "json",
+                success: function (result) {
+                    if(result && result.length > 0) {
+                        DonutChartMorris.setData(result);
                     } else {
-                        console.warn("Không có dữ liệu trong khoảng thời gian đã chọn.");
-                        ChartMorris.setData([]);
+                         DonutChartMorris.setData([{label: "Chưa có dữ liệu", value: 1}]);
                     }
                 },
                 error: function (error) {
-                    console.error("Lỗi khi lọc dữ liệu:", error);
-                    alert("Đã xảy ra lỗi khi lọc dữ liệu.");
-                    ChartMorris.setData([]);
+                    console.error("Lỗi lấy biểu đồ tròn:", error);
                 }
             });
-        });
+        }
+        
+        loadDonutChartData();
 
     }); // ĐÓNG $(document).ready() – THIẾU DẤU NÀY TRƯỚC ĐÂY!
     </script>
